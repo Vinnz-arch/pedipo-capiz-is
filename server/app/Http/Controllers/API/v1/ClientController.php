@@ -16,7 +16,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         $perPage = $request->query('per_page', 10);
-        return response()->json(Client::latest()->paginate($perPage));
+        return response()->json(Client::orderBy('fullname', 'asc')->paginate($perPage));
     }
 
     /**
@@ -28,7 +28,7 @@ class ClientController extends Controller
             'fullname' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:clients',
             'email' => 'required|string|email|max:255|unique:clients',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:8|confirmed',
             'role' => 'nullable|string|max:50',
         ]);
 
@@ -69,13 +69,25 @@ class ClientController extends Controller
                 'sometimes', 'required', 'string', 'email', 'max:255',
                 Rule::unique('clients')->ignore($client->id),
             ],
-            'password' => 'sometimes|nullable|string|min:8',
+            'current_password' => 'required_with:password|string',
+            'password' => 'sometimes|nullable|string|min:8|confirmed',
             'role' => 'sometimes|nullable|string|max:50',
         ]);
+
+        if (!empty($validated['password'])) {
+            if (!Hash::check($validated['current_password'], $client->password)) {
+                throw ValidationException::withMessages([
+                    'current_password' => ['The provided current password does not match our records.'],
+                ]);
+            }
+        }
 
         if (empty($validated['password'])) {
             unset($validated['password']);
         }
+        
+        unset($validated['current_password']);
+        unset($validated['password_confirmation']);
 
         $client->update($validated);
 
