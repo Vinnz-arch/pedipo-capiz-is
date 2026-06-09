@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API\v1;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -69,27 +69,25 @@ class AuthController extends Controller
             }
         }
 
-        // 3. Find the user by email
-
-        // 3. Find the user by email
-        $user = User::where('email', $request->email)->first();
+        // 3. Find the admin by email
+        $admin = Admin::where('email', $request->email)->first();
 
         // 3. Securely check the password
         // We use Hash::check to compare the plain text password with the hashed one in the DB
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (! $admin || ! Hash::check($request->password, $admin->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        // 4. Generate a secure token for this user
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // 4. Generate a secure token for this admin
+        $token = $admin->createToken('auth_token')->plainTextToken;
 
-        // 5. Return the token and user info
+        // 5. Return the token and user info (return admin under 'user' key for frontend compatibility)
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user
+            'user' => $admin
         ]);
     }
 

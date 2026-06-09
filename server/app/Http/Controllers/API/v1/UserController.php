@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\API\v1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Client;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
-class ClientController extends Controller
+class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -16,7 +17,19 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         $perPage = $request->query('per_page', 10);
-        return response()->json(Client::orderBy('fullname', 'asc')->paginate($perPage));
+        $search = $request->query('search', '');
+
+        $query = User::query();
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('fullname', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        return response()->json($query->orderBy('fullname', 'asc')->paginate($perPage));
     }
 
     /**
@@ -26,13 +39,13 @@ class ClientController extends Controller
     {
         $validated = $request->validate([
             'fullname' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:clients',
-            'email' => 'required|string|email|max:255|unique:clients',
+            'username' => 'required|string|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'nullable|string|max:50',
         ]);
 
-        $client = Client::create([
+        $user = User::create([
             'fullname' => $validated['fullname'],
             'username' => $validated['username'],
             'email' => $validated['email'],
@@ -41,33 +54,34 @@ class ClientController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Client created successfully.',
-            'client' => $client
+            'message' => 'User created successfully.',
+            'user' => $user,
+            'client' => $user // for frontend compatibility
         ], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Client $client)
+    public function show(User $user)
     {
-        return response()->json($client);
+        return response()->json($user);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Client $client)
+    public function update(Request $request, User $user)
     {
         $validated = $request->validate([
             'fullname' => 'sometimes|required|string|max:255',
             'username' => [
                 'sometimes', 'required', 'string', 'max:255',
-                Rule::unique('clients')->ignore($client->id),
+                Rule::unique('users')->ignore($user->id),
             ],
             'email' => [
                 'sometimes', 'required', 'string', 'email', 'max:255',
-                Rule::unique('clients')->ignore($client->id),
+                Rule::unique('users')->ignore($user->id),
             ],
             'current_password' => 'required_with:password|string',
             'password' => 'sometimes|nullable|string|min:8|confirmed',
@@ -75,7 +89,7 @@ class ClientController extends Controller
         ]);
 
         if (!empty($validated['password'])) {
-            if (!Hash::check($validated['current_password'], $client->password)) {
+            if (!Hash::check($validated['current_password'], $user->password)) {
                 throw ValidationException::withMessages([
                     'current_password' => ['The provided current password does not match our records.'],
                 ]);
@@ -89,23 +103,24 @@ class ClientController extends Controller
         unset($validated['current_password']);
         unset($validated['password_confirmation']);
 
-        $client->update($validated);
+        $user->update($validated);
 
         return response()->json([
-            'message' => 'Client updated successfully.',
-            'client' => $client
+            'message' => 'User updated successfully.',
+            'user' => $user,
+            'client' => $user // for frontend compatibility
         ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Client $client)
+    public function destroy(User $user)
     {
-        $client->delete();
+        $user->delete();
 
         return response()->json([
-            'message' => 'Client deleted successfully.'
+            'message' => 'User deleted successfully.'
         ]);
     }
 }
