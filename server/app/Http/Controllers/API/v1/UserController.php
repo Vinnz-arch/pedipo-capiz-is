@@ -50,7 +50,7 @@ class UserController extends Controller
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => $validated['password'], // Hash cast will handle this
-            'role' => $validated['role'] ?? 'client',
+            'role' => $validated['role'] ?? 'user',
         ]);
 
         return response()->json([
