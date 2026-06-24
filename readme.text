@@ -1,0 +1,35 @@
+ 1. Update the Seeder
+  Open server/database/seeders/AdminUserSeeder.php and add the second admin:
+
+    1 public function run(): void
+    2 {
+    3     // First Admin
+    4     User::updateOrCreate(
+    5         ['email' => 'admin@pedipo.com'],
+    6         [
+    7             'name' => 'Administrator',
+    8             'password' => Hash::make('password123'),
+    9             'email_verified_at' => now(),
+   10         ]
+   11     );
+   12
+   13     // Second Admin (Add this)
+   14     User::updateOrCreate(
+   15         ['email' => 'staff@pedipo.com'], // Their email
+   16         [
+   17             'name' => 'Staff Member',       // Their name
+   18             'password' => Hash::make('securepassword'), // Their password
+   19             'email_verified_at' => now(),
+   20         ]
+   21     );
+   22 }
+
+  2. Run the Seeder
+  Run this command in your terminal to apply the changes:
+
+   1 php artisan db:seed --class=AdminUserSeeder
+
+
+Site Key : 6Lc_N-0sAAAAAGueg-Qz8XS4y1HQgtzP-K07rFlw
+
+Secret Key : 6Lc_N-0sAAAAAMwmSy4yynipZKCo_xCjY1NqTQCT
