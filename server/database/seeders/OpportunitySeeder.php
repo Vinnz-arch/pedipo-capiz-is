@@ -25,7 +25,8 @@ class OpportunitySeeder extends Seeder
                     'category_id' => $agri->id,
                     'roi_estimate' => 14.50,
                     'land_area' => 2.50,
-                    'incentive_package' => 'TAX HOLIDAY (5Y), DUTY-FREE IMPORTS, LOCAL LABOR SUBSIDY',
+                    'key_incentives' => 'TAX HOLIDAY (5Y), DUTY-FREE IMPORTS, LOCAL LABOR SUBSIDY',
+                    'description' => 'Proposed centralized processing facility for sustainable aquamarine exports. Strategically located near the Roxas City Airport and Culasi Port.',
                     'image_path' => '/images/seafood_hub.png',
                     'status' => 'Published',
                 ]
@@ -39,7 +40,8 @@ class OpportunitySeeder extends Seeder
                     'category_id' => $it->id,
                     'roi_estimate' => 12.20,
                     'land_area' => 5.00,
-                    'incentive_package' => 'PEZA ACCREDITED, TAX INCENTIVES, 100% FOREIGN OWNERSHIP',
+                    'key_incentives' => 'PEZA ACCREDITED, TAX INCENTIVES, 100% FOREIGN OWNERSHIP',
+                    'description' => 'Modern IT business park supporting BPOs, tech hubs, and innovation centers with redundant fiber optic connections and power security.',
                     'image_path' => 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
                     'status' => 'Published',
                 ]
@@ -53,7 +55,8 @@ class OpportunitySeeder extends Seeder
                     'category_id' => $tourism->id,
                     'roi_estimate' => 18.00,
                     'land_area' => 12.00,
-                    'incentive_package' => 'ECO-TOURISM INCENTIVE, CAPITAL DEDUCTION, GREEN BUILD REBATE',
+                    'key_incentives' => 'ECO-TOURISM INCENTIVE, CAPITAL DEDUCTION, GREEN BUILD REBATE',
+                    'description' => 'Luxury eco-friendly beach resort development along the pristine coastlines of Pilar, designed for sustainable tourism and wellness.',
                     'image_path' => 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
                     'status' => 'Draft',
                 ]
@@ -67,7 +70,8 @@ class OpportunitySeeder extends Seeder
                     'category_id' => $infra->id,
                     'roi_estimate' => 9.50,
                     'land_area' => 8.50,
-                    'incentive_package' => 'INFRASTRUCTURE GRANT, PORT ACCESS DISCOUNTS',
+                    'key_incentives' => 'INFRASTRUCTURE GRANT, PORT ACCESS DISCOUNTS',
+                    'description' => 'Integrated warehousing and cold-chain facility strategically placed along Panay highway interconnecting Capiz and neighbor provinces.',
                     'image_path' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
                     'status' => 'Closed',
                 ]

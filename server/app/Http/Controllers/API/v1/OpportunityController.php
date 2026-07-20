@@ -35,6 +35,8 @@ class OpportunityController extends Controller
             'category_id' => 'required|exists:categories,id',
             'roi_estimate' => 'nullable|numeric',
             'land_area' => 'nullable|numeric',
+            'key_incentives' => 'nullable|string',
+            'description' => 'nullable|string',
             'incentive_package' => 'nullable|string',
             'status' => 'nullable|string|in:Draft,Published,Closed',
         ];
@@ -56,7 +58,9 @@ class OpportunityController extends Controller
             'category_id' => $validated['category_id'],
             'roi_estimate' => $validated['roi_estimate'] ?? null,
             'land_area' => $validated['land_area'] ?? null,
-            'incentive_package' => $validated['incentive_package'] ?? null,
+            'key_incentives' => $validated['key_incentives'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'incentive_package' => $validated['incentive_package'] ?? $validated['key_incentives'] ?? null,
             'image_path' => $imagePath ?? '/images/seafood_hub.png',
             'status' => $validated['status'] ?? 'Draft',
         ]);
@@ -85,6 +89,8 @@ class OpportunityController extends Controller
             'category_id' => 'sometimes|required|exists:categories,id',
             'roi_estimate' => 'nullable|numeric',
             'land_area' => 'nullable|numeric',
+            'key_incentives' => 'nullable|string',
+            'description' => 'nullable|string',
             'incentive_package' => 'nullable|string',
             'status' => 'nullable|string|in:Draft,Published,Closed',
         ];

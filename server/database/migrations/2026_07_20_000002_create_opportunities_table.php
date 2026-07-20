@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->decimal('roi_estimate', 8, 2)->nullable();
             $table->decimal('land_area', 8, 2)->nullable();
+            $table->text('key_incentives')->nullable();
+            $table->text('description')->nullable();
             $table->text('incentive_package')->nullable();
             $table->string('image_path')->nullable();
             $table->string('status')->default('Draft');

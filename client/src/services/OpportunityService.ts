@@ -12,6 +12,8 @@ export interface OpportunityData {
   category?: CategoryData;
   roi_estimate?: number | string;
   land_area?: number | string;
+  key_incentives?: string;
+  description?: string;
   incentive_package?: string;
   image_path?: string;
   status: "Draft" | "Published" | "Closed";

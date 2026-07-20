@@ -53,7 +53,7 @@ export const InvestmentManagement: React.FC = () => {
   const [roiEstimate, setRoiEstimate] = useState("");
   const [landArea, setLandArea] = useState("");
   const [statusOption, setStatusOption] = useState<Project["status"]>("Draft");
-  const [incentivePackage, setIncentivePackage] = useState("");
+  const [description, setDescription] = useState("");
   const [keyIncentives, setKeyIncentives] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -77,10 +77,10 @@ export const InvestmentManagement: React.FC = () => {
     status: item.status || "Draft",
     landArea: item.land_area ? `${item.land_area} Ha` : "0 Ha",
     image: resolveImageUrl(item.image_path),
-    incentives: item.incentive_package 
-      ? item.incentive_package.split(",").map(s => s.trim().toUpperCase()).filter(Boolean)
+    incentives: (item.key_incentives || item.incentive_package) 
+      ? (item.key_incentives || item.incentive_package)!.split(",").map(s => s.trim().toUpperCase()).filter(Boolean)
       : ["LOCAL INCENTIVES"],
-    description: item.incentive_package || "No description provided."
+    description: item.description || item.incentive_package || "No description provided."
   });
 
   const loadData = async () => {
@@ -131,7 +131,7 @@ export const InvestmentManagement: React.FC = () => {
     setRoiEstimate("");
     setLandArea("");
     setStatusOption("Draft");
-    setIncentivePackage("");
+    setDescription("");
     setKeyIncentives("");
     setSelectedFile(null);
     setImagePreview(null);
@@ -152,7 +152,7 @@ export const InvestmentManagement: React.FC = () => {
     setLandArea(project.landArea.replace(" Ha", ""));
     setStatusOption(project.status);
     setKeyIncentives(project.incentives.join(", "));
-    setIncentivePackage(project.description);
+    setDescription(project.description);
     setImagePreview(project.image);
     setSelectedFile(null);
     setIsModalOpen(true);
@@ -191,10 +191,8 @@ export const InvestmentManagement: React.FC = () => {
     if (roiEstimate) formData.append("roi_estimate", roiEstimate.replace("%", ""));
     if (landArea) formData.append("land_area", landArea.replace("Ha", "").trim());
     formData.append("status", statusOption);
-    
-    // Pass keyIncentives or incentivePackage as incentive_package
-    const finalIncentives = keyIncentives.trim() || incentivePackage.trim();
-    if (finalIncentives) formData.append("incentive_package", finalIncentives);
+    if (keyIncentives) formData.append("key_incentives", keyIncentives.trim());
+    if (description) formData.append("description", description.trim());
 
     if (selectedFile && selectedFile instanceof File) {
       formData.append("image", selectedFile);
@@ -674,14 +672,14 @@ export const InvestmentManagement: React.FC = () => {
                     <p className="text-[11px] text-slate-400">Separate multiple incentive tags with commas.</p>
                   </div>
 
-                  {/* Row 3: Incentive Package */}
+                  {/* Description */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Incentive Package / Description</label>
+                    <label className="text-xs font-bold text-slate-700">Description</label>
                     <textarea
                       rows={3}
-                      value={incentivePackage}
-                      onChange={(e) => setIncentivePackage(e.target.value)}
-                      placeholder="Describe the tax holidays, exemptions, or local government support available..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Describe the proposed project, strategic location, target market, or investment opportunities..."
                       className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all resize-none"
                     />
                   </div>

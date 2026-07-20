@@ -15,6 +15,8 @@ class Opportunity extends Model
         'category_id',
         'roi_estimate',
         'land_area',
+        'key_incentives',
+        'description',
         'incentive_package',
         'image_path',
         'status',
