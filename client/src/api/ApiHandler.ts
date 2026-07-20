@@ -24,7 +24,8 @@ export const ApiHandler = {
    */
   post: async <T>(url: string, data?: any, successMsg?: string) => {
     try {
-      const response = await AxiosInstance.post<T>(url, data);
+      const config = data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined;
+      const response = await AxiosInstance.post<T>(url, data, config);
       if (successMsg) notify.success("Success", successMsg);
       return response.data;
     } catch (error: any) {
@@ -38,7 +39,8 @@ export const ApiHandler = {
    */
   put: async <T>(url: string, data?: any, successMsg?: string) => {
     try {
-      const response = await AxiosInstance.put<T>(url, data);
+      const config = data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined;
+      const response = await AxiosInstance.put<T>(url, data, config);
       if (successMsg) notify.success("Success", successMsg);
       return response.data;
     } catch (error: any) {

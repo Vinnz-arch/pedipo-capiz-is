@@ -5,7 +5,6 @@ import AuthGuard from "../components/auth/AuthGuard";
 import UserAuthGuard from "../components/auth/UserAuthGuard";
 import GuestGuard from "../components/auth/GuestGuard";
 import React, { Suspense } from "react";
-import DataEntry from "@/pages/DataEntry/DataEntry";
 import DataManagement from "@/pages/DataManagement/DataManagement";
 import LoadingScreen from "@/components/common/LoadingScreen";
 
@@ -29,8 +28,7 @@ const ManageUsers = lazyWithDelay(() => import("../pages/Users/ManageUsers"))
 const UserLogin = lazyWithDelay(() => import("../pages/auth/UserLogin"))
 const UserDashboard = lazyWithDelay(() => import("../pages/UserDashboard"))
 const Municipalities = lazyWithDelay(() => import("../pages/Municipalities/Municipalities"))
-const InvestmentOpportunies = lazyWithDelay(() => import("../pages/InvestmentOpportunities/InvestmentOpportunies"))
-const ComparisonTool = lazyWithDelay(() => import("../pages/ComparisonTool/ComparisonTool"))
+const InvestmentManagement = lazyWithDelay(() => import("../pages/InvestmentManagement/InvestmentManagement"))
 
 const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType<any>>) => (
   <Suspense fallback={<LoadingScreen />}>
@@ -104,26 +102,10 @@ export const Routes = createBrowserRouter([
         )
       },
       {
-        path: "manageInvestmentOpportunities",
+        path: "manageInvestmentManagement",
         element: (
           <AuthGuard>
-            {withSuspense(InvestmentOpportunies)}
-          </AuthGuard>
-        )
-      },
-      {
-        path: "manageComparisonTool",
-        element: (
-          <AuthGuard>
-            {withSuspense(ComparisonTool)}
-          </AuthGuard>
-        )
-      },
-      {
-        path: "manageDataEntry",
-        element: (
-          <AuthGuard>
-            <DataEntry />
+            {withSuspense(InvestmentManagement)}
           </AuthGuard>
         )
       },

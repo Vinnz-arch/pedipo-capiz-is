@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Investment Registry &amp; Curation | PEDIPO Capiz</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed": "#00164e",
+            "inverse-surface": "#213145",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed-variant": "#264191",
+            "surface-container-highest": "#d3e4fe",
+            "surface-variant": "#d3e4fe",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-dim": "#cbdbf5",
+            "background": "#f8f9ff",
+            "surface-tint": "#4059aa",
+            "on-tertiary-fixed": "#00174b",
+            "surface-container-lowest": "#ffffff",
+            "on-error": "#ffffff",
+            "primary-container": "#1e3a8a",
+            "outline-variant": "#c5c5d3",
+            "on-tertiary-fixed-variant": "#003ea8",
+            "tertiary": "#00246b",
+            "surface": "#f8f9ff",
+            "surface-container-high": "#dce9ff",
+            "tertiary-container": "#00389a",
+            "secondary-fixed": "#dae2fd",
+            "secondary": "#565e74",
+            "on-secondary-container": "#5c647a",
+            "on-primary": "#ffffff",
+            "secondary-container": "#dae2fd",
+            "on-background": "#0b1c30",
+            "primary-fixed": "#dce1ff",
+            "primary": "#00236f",
+            "on-surface": "#0b1c30",
+            "on-secondary-fixed": "#131b2e",
+            "tertiary-fixed": "#dbe1ff",
+            "on-tertiary-container": "#8da9ff",
+            "on-secondary-fixed-variant": "#3f465c",
+            "on-secondary": "#ffffff",
+            "tertiary-fixed-dim": "#b4c5ff",
+            "surface-container-low": "#eff4ff",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-container": "#e5eeff",
+            "surface-bright": "#f8f9ff",
+            "secondary-fixed-dim": "#bec6e0",
+            "on-surface-variant": "#444651",
+            "on-error-container": "#93000a",
+            "inverse-primary": "#b6c4ff",
+            "outline": "#757682",
+            "error-container": "#ffdad6",
+            "on-primary-container": "#90a8ff",
+            "error": "#ba1a1a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "base": "4px",
+            "xl": "32px",
+            "margin-desktop": "40px",
+            "sm": "8px",
+            "margin-mobile": "16px",
+            "gutter": "20px",
+            "lg": "24px",
+            "md": "16px",
+            "xs": "4px"
+          },
+          "fontFamily": {
+            "body-sm": ["Public Sans"],
+            "body-md": ["Public Sans"],
+            "label-md": ["Public Sans"],
+            "headline-md": ["Public Sans"],
+            "headline-sm": ["Public Sans"],
+            "title-lg": ["Public Sans"],
+            "display-lg": ["Public Sans"],
+            "label-sm": ["Public Sans"],
+            "headline-md-mobile": ["Public Sans"]
+          },
+          "fontSize": {
+            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "label-md": ["13px", {"lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+            "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+            "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      font-family: 'Public Sans', sans-serif;
+      background-color: #f8fafc;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="flex min-h-screen">
+  <!-- Sidebar Navigation -->
+  <aside class="fixed left-0 top-0 h-screen w-[280px] bg-tertiary dark:bg-on-primary-fixed border-r border-outline-variant dark:border-on-secondary-fixed-variant flex flex-col py-xl z-50">
+    <div class="px-md mb-xl">
+      <h1 class="text-title-lg font-title-lg font-bold text-on-tertiary dark:text-on-primary-fixed-variant mb-xs">PEDIPO Capiz</h1>
+      <p class="text-body-sm font-body-sm text-tertiary-fixed opacity-70">Government Admin Portal</p>
+    </div>
+    <nav class="flex-1 space-y-1">
+      <a class="flex items-center gap-md text-tertiary-fixed hover:bg-tertiary-fixed-dim/10 px-md py-sm transition-colors duration-200" href="#">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="text-label-md font-label-md">Economic Monitor</span>
+      </a>
+      <a class="flex items-center gap-md text-tertiary-fixed hover:bg-tertiary-fixed-dim/10 px-md py-sm transition-colors duration-200" href="#">
+        <span class="material-symbols-outlined">location_city</span>
+        <span class="text-label-md font-label-md">Municipal Data</span>
+      </a>
+      <!-- Active State -->
+      <a class="flex items-center gap-md bg-tertiary-container text-on-tertiary-container border-l-4 border-on-tertiary-fixed-variant px-md py-sm opacity-90 transition-opacity" href="#">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <span class="text-label-md font-label-md">Investment Registry</span>
+      </a>
+      <a class="flex items-center gap-md text-tertiary-fixed hover:bg-tertiary-fixed-dim/10 px-md py-sm transition-colors duration-200" href="#">
+        <span class="material-symbols-outlined">description</span>
+        <span class="text-label-md font-label-md">Report Generator</span>
+      </a>
+      <a class="flex items-center gap-md text-tertiary-fixed hover:bg-tertiary-fixed-dim/10 px-md py-sm transition-colors duration-200" href="#">
+        <span class="material-symbols-outlined">search_insights</span>
+        <span class="text-label-md font-label-md">Data Discovery</span>
+      </a>
+    </nav>
+    <div class="px-md mt-auto pt-lg border-t border-on-tertiary-fixed-variant/20">
+      <a class="flex items-center gap-md text-tertiary-fixed hover:bg-tertiary-fixed-dim/10 px-md py-sm transition-colors duration-200" href="#">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="text-label-md font-label-md">Settings</span>
+      </a>
+      <a class="flex items-center gap-md text-tertiary-fixed hover:bg-tertiary-fixed-dim/10 px-md py-sm transition-colors duration-200" href="#">
+        <span class="material-symbols-outlined">help</span>
+        <span class="text-label-md font-label-md">Support</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content Canvas -->
+  <main class="ml-[280px] flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
+    <!-- Top App Bar -->
+    <header class="h-16 flex justify-between items-center px-margin-desktop bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-on-secondary-fixed-variant shadow-sm shrink-0">
+      <div class="flex items-center gap-md">
+        <span class="text-headline-sm font-headline-sm font-bold text-on-surface dark:text-inverse-on-surface">Investment Registry &amp; Curation</span>
+      </div>
+      <div class="flex items-center gap-lg">
+        <div class="relative w-80">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+          <input class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-10 pr-4 text-body-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Search registry..." type="text"/>
+        </div>
+        <button class="flex items-center justify-center p-2 rounded-full hover:bg-on-surface-variant/10 text-on-surface-variant transition-all duration-150" id="notification-btn">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <div class="h-8 w-8 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-bold text-xs">
+          AC
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- List View (Left Column) -->
+      <section class="flex-1 overflow-y-auto p-margin-desktop space-y-lg custom-scrollbar">
+        <div class="flex justify-between items-end mb-lg">
+          <div>
+            <h2 class="text-headline-md font-headline-md text-on-surface">Current Opportunities</h2>
+            <p class="text-body-sm text-on-surface-variant">Manage and curate active investment slots for the Capiz Investor Portal.</p>
+          </div>
+          <button class="bg-[#0284c7] text-white px-lg py-2 rounded-lg font-label-md flex items-center gap-2 hover:opacity-90 shadow-sm transition-all">
+            <span class="material-symbols-outlined text-[20px]">add</span>
+            New Opportunity
+          </button>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+          <div class="bg-white p-lg rounded-xl border border-slate-200 shadow-sm flex items-center gap-lg">
+            <div class="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-[#0284c7]">
+              <span class="material-symbols-outlined">trending_up</span>
+            </div>
+            <div>
+              <p class="text-label-sm uppercase text-slate-500">Active Listings</p>
+              <p class="text-headline-md text-slate-900">42</p>
+            </div>
+          </div>
+          <div class="bg-white p-lg rounded-xl border border-slate-200 shadow-sm flex items-center gap-lg">
+            <div class="h-12 w-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <span class="material-symbols-outlined">pending_actions</span>
+            </div>
+            <div>
+              <p class="text-label-sm uppercase text-slate-500">Draft Status</p>
+              <p class="text-headline-md text-slate-900">18</p>
+            </div>
+          </div>
+          <div class="bg-white p-lg rounded-xl border border-slate-200 shadow-sm flex items-center gap-lg">
+            <div class="h-12 w-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+              <span class="material-symbols-outlined">visibility</span>
+            </div>
+            <div>
+              <p class="text-label-sm uppercase text-slate-500">Views (7d)</p>
+              <p class="text-headline-md text-slate-900">1,204</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th class="px-lg py-3 text-label-sm uppercase text-slate-500 font-bold">Opportunity Name</th>
+                <th class="px-lg py-3 text-label-sm uppercase text-slate-500 font-bold">ROI (%)</th>
+                <th class="px-lg py-3 text-label-sm uppercase text-slate-500 font-bold">Land Area</th>
+                <th class="px-lg py-3 text-label-sm uppercase text-slate-500 font-bold">Status</th>
+                <th class="px-lg py-3 text-label-sm uppercase text-slate-500 font-bold">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr class="hover:bg-slate-50 cursor-pointer group bg-blue-50/20 border-l-4 border-[#0284c7]">
+                <td class="px-lg py-4">
+                  <div class="flex items-center gap-md">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                      <img class="w-full h-full object-cover" data-alt="A high-resolution aerial photograph showing a sprawling industrial complex in a coastal region of Capiz, Philippines. The architecture is modern with large solar panels on rooftops, surrounded by lush green foliage and clear blue water. The lighting is bright and clear, reflecting a professional and prosperous economic development zone with a modern light-mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSA8vmHnMBNqMAUJPhk_AoslbjUQTPPT2LdufIOJUEjzBpvDtrUt_bvw0AwJUIcsro7JwqcWT6WSTS82Jq9HwteRu10_2cRcgNQINc3rVUB-E-mUMrBgxBTSxkIXl8RL31wtkLQ7mz1fEbg5uwKZxLeuZEu-SgWuRYkQHwGOQet0Es7WTB3XapttACjn0ClpC513_R98kW7KfaXApybUfomOYjLmiQgJuIUgzKgP4F9K4J0vRlxFrZ"/>
+                    </div>
+                    <div>
+                      <p class="text-label-md font-bold text-slate-900">Panay Industrial Hub</p>
+                      <p class="text-body-sm text-slate-500">Logistics &amp; Manufacturing</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="text-body-sm font-semibold text-emerald-600">12.4%</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="text-body-sm text-slate-700">45.0 Hectares</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-label-sm">PUBLISHED</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="material-symbols-outlined text-slate-400 group-hover:text-[#0284c7] transition-colors">edit_note</span>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-50 cursor-pointer group">
+                <td class="px-lg py-4">
+                  <div class="flex items-center gap-md">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                      <img class="w-full h-full object-cover" data-alt="A sleek and modern rendering of a high-tech eco-tourism resort nestled in a lush mangrove area. The design features wooden walkways, sustainable glass structures, and soft evening ambient lighting. The atmosphere is serene and luxurious, using a palette of natural greens and warm timbers to suggest a premium investment opportunity in sustainable development." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUSq8SzGQPnm3t7ZY66dh7dCohdATkbKa7n2Q5sgQddb8xpi1nvW8nyqqLWPwKFsE5w-ZpXMXUuq5h5UQB366XVMUv6iFs3OGhTcIx2t3lL_2C-SsH2e0hurpw2brkhRLXITSKyoemBJOovPQM1qEbNl4-brHPLgHW53CTvzwgTxsmCDh3qlrnZEy1EO5y4VAvcuwTdukWkvUDT9EEzG3JAJUAm6ISuqscm3SznZPVnoGjUH2xoa_T"/>
+                    </div>
+                    <div>
+                      <p class="text-label-md font-bold text-slate-900">Roxas Eco-Resort</p>
+                      <p class="text-body-sm text-slate-500">Hospitality</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="text-body-sm font-semibold text-emerald-600">8.2%</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="text-body-sm text-slate-700">12.5 Hectares</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-label-sm">DRAFT</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="material-symbols-outlined text-slate-400 group-hover:text-[#0284c7] transition-colors">edit_note</span>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-50 cursor-pointer group">
+                <td class="px-lg py-4">
+                  <div class="flex items-center gap-md">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                      <img class="w-full h-full object-cover" data-alt="A professional architectural visualization of a modern agricultural processing plant. Large silos are integrated with a clean, white-walled administrative building. The setting is a sunny, rural landscape with a clear blue sky. The visual style is crisp and authoritative, emphasizing efficiency and institutional trust within the Capiz economic landscape." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2AyhotIeLgvew_bba4kopkpagjRhfgkkFwebqDg1gm0GnT8ppFXQ_0vpq0S7tUBeVEdQXUSCDnWxbcH4ssylBr6GBYIrSxPDE0H1xGPFeTAds8qiF1dF5y7e1hctPi0qAeFQfh4-ywhngLYuTUBsok5D3w1mrn2LuFGdB-ldAXWWktJ_Ec5Sx_UMBpjXVf_kxf-DrAX4hbp80lj6Nr_3FL7741zmeuIZjHgC8VPRQHZLODeriisSM"/>
+                    </div>
+                    <div>
+                      <p class="text-label-md font-bold text-slate-900">Capiz Agri-Processing</p>
+                      <p class="text-body-sm text-slate-500">Agriculture</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="text-body-sm font-semibold text-emerald-600">15.1%</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="text-body-sm text-slate-700">5.2 Hectares</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="px-2 py-1 rounded bg-red-100 text-red-700 text-label-sm">CLOSED</span>
+                </td>
+                <td class="px-lg py-4">
+                  <span class="material-symbols-outlined text-slate-400 group-hover:text-[#0284c7] transition-colors">edit_note</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Curation Workspace (Right Panel) -->
+      <aside class="w-[420px] bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar flex flex-col">
+        <div class="p-lg border-b border-slate-100 bg-slate-50 shrink-0">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-label-sm font-bold text-[#0284c7] tracking-widest uppercase">Workspace</span>
+            <span class="flex items-center gap-1 text-slate-400">
+              <span class="material-symbols-outlined text-[18px]">history</span>
+              <span class="text-label-sm">Last saved 2m ago</span>
+            </span>
+          </div>
+          <h3 class="text-headline-sm font-bold text-slate-900">Curation: Panay Industrial Hub</h3>
+        </div>
+        <div class="p-lg space-y-xl flex-1">
+          <!-- Photo Upload Section -->
+          <div class="space-y-sm">
+            <label class="text-label-md font-bold text-slate-700">Cover Photography</label>
+            <div class="relative group rounded-xl overflow-hidden border-2 border-dashed border-slate-200 hover:border-[#0284c7] transition-all h-48 flex items-center justify-center bg-slate-50 cursor-pointer">
+              <div class="text-center">
+                <span class="material-symbols-outlined text-slate-300 text-4xl group-hover:text-[#0284c7]">add_a_photo</span>
+                <p class="text-label-sm text-slate-400 mt-2">Click to replace or drag photos</p>
+              </div>
+              <img class="absolute inset-0 w-full h-full object-cover opacity-10 group-hover:opacity-20 transition-opacity" data-alt="A stunning, high-angle view of a coastal industrial harbor at sunset. The sky is painted in soft oranges and purples, reflecting off the calm sea. Modern gantry cranes and shipping containers are neatly organized, conveying a sense of global connectivity and maritime efficiency. The aesthetic is cinematic and high-end, representing a premier investment location in the Philippines." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3uVBTbgVCE3rcLs7CohQ16Ik_GhmS2PTZwf3AqEijbD-MWhFwBQUcQGrrS7awDY9M7RTYw9756t52FXd2ZCkbRKDiezU5ZtzlKMO7pK2GrrfwNUsG6pq2WY8ShXnL8myhiiCTyUsSc5IbH5mXB7AFEDWwn8FeNg7H-ugg3Kc9Y1inBNJfaTr9xWTenPkHHBfqaV43w07V21DhKhm93jhsKkJwWhFLMJPW1Vg7h1QcCTPIhlfkoVRe"/>
+            </div>
+          </div>
+          <!-- Description Textarea -->
+          <div class="space-y-sm">
+            <label class="text-label-md font-bold text-slate-700">Investor Description</label>
+            <textarea class="w-full h-32 border border-slate-300 rounded-lg p-sm text-body-sm focus:ring-2 focus:ring-[#0284c7] focus:border-transparent transition-all resize-none" placeholder="Enter high-level overview for potential investors...">The Panay Industrial Hub is strategically located near major maritime routes, offering a robust logistics foundation for manufacturers seeking export efficiency. Featuring renewable energy integration and tax-free zoning...</textarea>
+          </div>
+          <!-- Tags / Incentives -->
+          <div class="space-y-sm">
+            <label class="text-label-md font-bold text-slate-700">Available Incentives</label>
+            <div class="flex flex-wrap gap-2">
+              <button class="bg-blue-50 text-[#0284c7] border border-blue-200 px-3 py-1 rounded-full text-label-sm flex items-center gap-1">
+                Tax Holiday <span class="material-symbols-outlined text-[14px]">close</span>
+              </button>
+              <button class="bg-blue-50 text-[#0284c7] border border-blue-200 px-3 py-1 rounded-full text-label-sm flex items-center gap-1">
+                Local Labor Subsidy <span class="material-symbols-outlined text-[14px]">close</span>
+              </button>
+              <button class="bg-slate-50 text-slate-400 border border-slate-200 border-dashed px-3 py-1 rounded-full text-label-sm flex items-center gap-1 hover:border-[#0284c7] hover:text-[#0284c7]">
+                <span class="material-symbols-outlined text-[14px]">add</span> Add Tag
+              </button>
+            </div>
+          </div>
+          <!-- Financial Inputs -->
+          <div class="grid grid-cols-2 gap-md">
+            <div class="space-y-sm">
+              <label class="text-label-md font-bold text-slate-700">Target ROI (%)</label>
+              <input class="w-full border border-slate-300 rounded-lg p-sm text-body-sm focus:ring-2 focus:ring-[#0284c7]" type="number" value="12.4"/>
+            </div>
+            <div class="space-y-sm">
+              <label class="text-label-md font-bold text-slate-700">Land Area (Ha)</label>
+              <input class="w-full border border-slate-300 rounded-lg p-sm text-body-sm focus:ring-2 focus:ring-[#0284c7]" type="number" value="45.0"/>
+            </div>
+          </div>
+          <!-- Publication Status -->
+          <div class="space-y-sm">
+            <label class="text-label-md font-bold text-slate-700">Visibility Status</label>
+            <select class="w-full border border-slate-300 rounded-lg p-sm text-body-sm focus:ring-2 focus:ring-[#0284c7]">
+              <option selected="">Published - Live on Portal</option>
+              <option>Draft - Hidden</option>
+              <option>Restricted - Approved Only</option>
+              <option>Archived - Historical Only</option>
+            </select>
+          </div>
+        </div>
+        <!-- Footer Actions -->
+        <div class="p-lg border-t border-slate-100 bg-slate-50 flex gap-md shrink-0">
+          <button class="flex-1 bg-[#0284c7] text-white py-2 rounded-lg font-label-md hover:opacity-90 transition-all">Save &amp; Update</button>
+          <button class="px-md py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 transition-all">
+            <span class="material-symbols-outlined">preview</span>
+          </button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Micro-interaction Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Row selection logic
+      const rows = document.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        row.addEventListener('click', () => {
+          rows.forEach(r => r.classList.remove('bg-blue-50/20', 'border-l-4', 'border-[#0284c7]'));
+          row.classList.add('bg-blue-50/20', 'border-l-4', 'border-[#0284c7]');
+        });
+      });
+
+      // Notification button logic
+      const notifyBtn = document.getElementById('notification-btn');
+      if (notifyBtn) {
+        notifyBtn.addEventListener('click', () => {
+          alert('Accessing administrative alerts...');
+        });
+      }
+    });
+  </script>
+</body>
+</html>

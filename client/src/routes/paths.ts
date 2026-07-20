@@ -14,9 +14,7 @@ export const PATHS = {
     MANAGE_INQUIRIES: `${APP_ROOT}/manageInquires`,
     MANAGE_USERS: `${APP_ROOT}/manageUsers`,
     MANAGE_MUNICIPALITIES: `${APP_ROOT}/manageMunicipalities`,
-    MANAGE_INVESTMENT_OPPORTUNITIES: `${APP_ROOT}/manageInvestmentOpportunities`,
-    MANAGE_COMPARISON_TOOL: `${APP_ROOT}/manageComparisonTool`,
-    MANAGE_DATA_ENTRY: `${APP_ROOT}/manageDataEntry`,
+    MANAGE_INVESTMENT_MANAGEMENT: `${APP_ROOT}/manageInvestmentManagement`,
     MANAGE_DATA_MANAGEMENT: `${APP_ROOT}/manageDataManagement`
   },
 

@@ -26,24 +26,14 @@ export const routes = [
     icon: Icons.Landmark,
   },
   {
-    label: "Investment Opportunities",
-    path: PATHS.APP.MANAGE_INVESTMENT_OPPORTUNITIES,
+    label: "Investment Management",
+    path: PATHS.APP.MANAGE_INVESTMENT_MANAGEMENT,
     icon: Icons.TrendingUp,
   },
   { 
     label: "Inquiries",
     path: PATHS.APP.MANAGE_INQUIRIES,
     icon: Icons.MessageSquare,
-  },
-  { 
-    label: "Comparison Tool",
-    path: PATHS.APP.MANAGE_COMPARISON_TOOL,
-    icon: Icons.Scale,
-  },
-  { 
-    label: "Data Entry",
-    path: PATHS.APP.MANAGE_DATA_ENTRY,
-    icon: Icons.Edit,
   },
   { 
     label: "Data Management",
@@ -55,8 +45,6 @@ export const routes = [
     path: PATHS.APP.MANAGE_USERS,
     icon: Icons.Users,
   },
-  
-
 ];
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
