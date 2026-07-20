@@ -61,7 +61,6 @@ export const routes = [
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [showLogout, setShowLogout] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const navigate = useNavigate()
 
@@ -175,54 +174,27 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           </nav>
 
           <div className="p-4 border-t border-white/10 shrink-0">
-             <div className="relative">
-                <button
-                  onClick={() => setShowLogout(!showLogout)}
-                  className={cn(
-                    "w-full flex items-center gap-4 px-3 py-2.5 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-all group relative",
-                    showLogout && "bg-white/5 text-white"
-                  )}
-                >
-                  <Icons.Settings size={20} className={cn(
-                    "shrink-0 transition-transform group-hover:rotate-45",
-                    showLogout && "rotate-45 text-white"
-                  )} />
-                  {!isCollapsed && <span className="text-sm font-medium text-left flex-1 cursor-pointer">Settings</span>}
-                  {!isCollapsed && (
-                    <Icons.ChevronDown size={14} className={cn("transition-transform text-white/40", showLogout && "rotate-180 text-white")} />
-                  )}
-                  {isCollapsed && (
-                    <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-[11px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-white/10">
-                      Settings
-                    </div>
-                  )}
-                </button>
-                
-                {showLogout && (
-                  <div className={cn(
-                    "mt-1 space-y-1 animate-in slide-in-from-top-1 duration-200",
-                    isCollapsed ? "flex flex-col items-center" : "pl-9"
-                  )}>
-                    <button
-                      onClick={handleLogout}
-                      disabled={isLoggingOut}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 cursor-pointer hover:bg-red-400/10 transition-all w-full text-xs font-medium group relative disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoggingOut ? (
-                        <Spinner className="size-4 text-red-400" />
-                      ) : (
-                        <Icons.LogOut size={16} className="group-hover:scale-110 transition-transform" />
-                      )}
-                      {!isCollapsed && <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>}
-                      {isCollapsed && (
-                        <div className="absolute left-full ml-4 px-2 py-1 bg-red-900 text-white text-[11px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-red-900/10">
-                          {isLoggingOut ? "Logging out..." : "Logout"}
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                )}
-             </div>
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="w-full flex items-center gap-4 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-400/10 transition-all group relative disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isLoggingOut ? (
+                <Spinner className="size-5 text-red-400" />
+              ) : (
+                <Icons.LogOut size={20} className="shrink-0 group-hover:scale-110 transition-transform text-red-400" />
+              )}
+              {!isCollapsed && (
+                <span className="text-sm font-medium text-left flex-1">
+                  {isLoggingOut ? "Logging out..." : "Logout"}
+                </span>
+              )}
+              {isCollapsed && (
+                <div className="absolute left-full ml-4 px-2 py-1 bg-red-900 text-white text-[11px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-red-900/10">
+                  {isLoggingOut ? "Logging out..." : "Logout"}
+                </div>
+              )}
+            </button>
           </div>
         </div>
       </aside>

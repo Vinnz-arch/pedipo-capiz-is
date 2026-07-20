@@ -4,20 +4,39 @@ import ManageInquiries from "@/pages/ManageInquires/ManageInquires";
 import AuthGuard from "../components/auth/AuthGuard";
 import UserAuthGuard from "../components/auth/UserAuthGuard";
 import GuestGuard from "../components/auth/GuestGuard";
-import React from "react";
+import React, { Suspense } from "react";
 import DataEntry from "@/pages/DataEntry/DataEntry";
 import DataManagement from "@/pages/DataManagement/DataManagement";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
-// LazyLoading
-const Dashboard = React.lazy(() => import("../pages/Dashboard"))
-const Login = React.lazy(() => import("../pages/auth/Login"))
-const ManageUsers = React.lazy(() => import("../pages/Users/ManageUsers"))
-const UserLogin = React.lazy(() => import("../pages/auth/UserLogin"))
-const UserDashboard = React.lazy(() => import("../pages/UserDashboard"))
-const Municipalities = React.lazy(() => import("../pages/Municipalities/Municipalities"))
-const InvestmentOpportunies = React.lazy(() => import("../pages/InvestmentOpportunities/InvestmentOpportunies"))
-const ComparisonTool = React.lazy(() => import("../pages/ComparisonTool/ComparisonTool"))
+// Configurable minimum loading delay in milliseconds (e.g. 1000 = 1 second)
+export const LOADING_DELAY_MS = 3000;
 
+// Helper to enforce a minimum loading screen display time
+const lazyWithDelay = (importFn: () => Promise<any>, delay = LOADING_DELAY_MS) => {
+  return React.lazy(() =>
+    Promise.all([
+      importFn(),
+      new Promise((resolve) => setTimeout(resolve, delay))
+    ]).then(([moduleExports]) => moduleExports)
+  );
+};
+
+// LazyLoading with minimum display delay
+const Dashboard = lazyWithDelay(() => import("../pages/Dashboard"))
+const Login = lazyWithDelay(() => import("../pages/auth/Login"))
+const ManageUsers = lazyWithDelay(() => import("../pages/Users/ManageUsers"))
+const UserLogin = lazyWithDelay(() => import("../pages/auth/UserLogin"))
+const UserDashboard = lazyWithDelay(() => import("../pages/UserDashboard"))
+const Municipalities = lazyWithDelay(() => import("../pages/Municipalities/Municipalities"))
+const InvestmentOpportunies = lazyWithDelay(() => import("../pages/InvestmentOpportunities/InvestmentOpportunies"))
+const ComparisonTool = lazyWithDelay(() => import("../pages/ComparisonTool/ComparisonTool"))
+
+const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType<any>>) => (
+  <Suspense fallback={<LoadingScreen />}>
+    <Component />
+  </Suspense>
+);
 
 export const Routes = createBrowserRouter([
   // Public Routes
@@ -25,14 +44,14 @@ export const Routes = createBrowserRouter([
     path: PATHS.LOGIN,
     element: (
       <GuestGuard>
-        <Login />
+        {withSuspense(Login)}
       </GuestGuard>
     ),
   },
   {
     path: PATHS.USER_LOGIN,
     element: (
-      <UserLogin />
+      withSuspense(UserLogin)
     ),
   },
   {
@@ -56,7 +75,7 @@ export const Routes = createBrowserRouter([
         path: "dashboard",
         element: (
           <AuthGuard>
-            <Dashboard />
+            {withSuspense(Dashboard)}
           </AuthGuard>
         ),
       },
@@ -72,7 +91,7 @@ export const Routes = createBrowserRouter([
         path: "manageUsers",
         element: (
           <AuthGuard>
-            <ManageUsers />
+            {withSuspense(ManageUsers)}
           </AuthGuard>
         )
       },
@@ -80,7 +99,7 @@ export const Routes = createBrowserRouter([
         path: "manageMunicipalities",
         element: (
           <AuthGuard>
-            <Municipalities />
+            {withSuspense(Municipalities)}
           </AuthGuard>
         )
       },
@@ -88,7 +107,7 @@ export const Routes = createBrowserRouter([
         path: "manageInvestmentOpportunities",
         element: (
           <AuthGuard>
-            <InvestmentOpportunies />
+            {withSuspense(InvestmentOpportunies)}
           </AuthGuard>
         )
       },
@@ -96,7 +115,7 @@ export const Routes = createBrowserRouter([
         path: "manageComparisonTool",
         element: (
           <AuthGuard>
-            <ComparisonTool />
+            {withSuspense(ComparisonTool)}
           </AuthGuard>
         )
       },
@@ -131,11 +150,10 @@ export const Routes = createBrowserRouter([
         path: "dashboard",
         element: (
           <UserAuthGuard>
-            <UserDashboard />
+            {withSuspense(UserDashboard)}
           </UserAuthGuard>
         ),
       },
     ]
   },
-
 ]);
