@@ -69,6 +69,17 @@ export const OpportunityService = {
       "Opportunity deleted successfully!"
     );
   },
+
+  /**
+   * Synchronize published opportunities to the Capiz Investor Portal.
+   */
+  syncPortal: async () => {
+    return await ApiHandler.post<{ message: string; synced_at: string; stats: { published: number; drafts: number; closed: number } }>(
+      "/v1/opportunities/sync",
+      {},
+      "Investor Portal synchronized successfully!"
+    );
+  },
 };
 
 export default OpportunityService;

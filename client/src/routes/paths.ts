@@ -22,5 +22,6 @@ export const PATHS = {
   PORTAL: {
     ROOT: `${CLIENT_ROOT}`,
     DASHBOARD: `${CLIENT_ROOT}/dashboard`,
+    INVESTOR_PORTAL: `${CLIENT_ROOT}/investorPortal`,
   }
 };

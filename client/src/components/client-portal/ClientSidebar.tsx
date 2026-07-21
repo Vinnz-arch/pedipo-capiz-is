@@ -19,24 +19,15 @@ export const clientRoutes = [
     path: PATHS.PORTAL.DASHBOARD,
     icon: Icons.LayoutDashboard,
   },
+  {
+    label: "Capiz Investor Portal",
+    path: PATHS.PORTAL.INVESTOR_PORTAL,
+    icon: Icons.TrendingUp,
+  },
 ];
 
 export default function ClientSidebar({ isCollapsed, setIsCollapsed }: ClientSidebarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const navigate = useNavigate()
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await UserServices.logout();
-      navigate(PATHS.USER_LOGIN);
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed)
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -132,28 +123,6 @@ export default function ClientSidebar({ isCollapsed, setIsCollapsed }: ClientSid
               </NavLink>
             ))}
           </nav>
-
-          <div className="p-4 border-t border-white/10 shrink-0">
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className={cn(
-                "w-full flex items-center cursor-pointer gap-4 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-400/10 hover:text-red-300 transition-all group relative disabled:opacity-50",
-              )}
-            >
-              {isLoggingOut ? (
-                <Spinner className="size-5 text-red-400" />
-              ) : (
-                <Icons.LogOut size={20} className="shrink-0 transition-transform group-hover:scale-110" />
-              )}
-              {!isCollapsed && <span className="text-sm font-medium">{isLoggingOut ? "Logging out..." : "Logout"}</span>}
-              {isCollapsed && (
-                <div className="absolute left-full ml-4 px-2 py-1 bg-red-900 text-white text-[11px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-red-900/10">
-                  {isLoggingOut ? "Logging out..." : "Logout"}
-                </div>
-              )}
-            </button>
-          </div>
         </div>
       </aside>
     </>

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Opportunity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class OpportunityController extends Controller
@@ -65,6 +66,8 @@ class OpportunityController extends Controller
             'status' => $validated['status'] ?? 'Draft',
         ]);
 
+        Cache::forget('public_opportunities');
+
         return response()->json([
             'message' => 'Opportunity created successfully.',
             'opportunity' => $opportunity->load('category'),
@@ -107,6 +110,7 @@ class OpportunityController extends Controller
         }
 
         $opportunity->update($validated);
+        Cache::forget('public_opportunities');
 
         return response()->json([
             'message' => 'Opportunity updated successfully.',
@@ -120,9 +124,47 @@ class OpportunityController extends Controller
     public function destroy(Opportunity $opportunity): JsonResponse
     {
         $opportunity->delete();
+        Cache::forget('public_opportunities');
 
         return response()->json([
             'message' => 'Opportunity deleted successfully.',
+        ]);
+    }
+
+    /**
+     * Get published opportunities for the public/user Capiz Investor Portal.
+     */
+    public function publicOpportunities(): JsonResponse
+    {
+        $data = Cache::remember('public_opportunities', 3600, function () {
+            return [
+                'opportunities' => Opportunity::with('category')->where('status', 'Published')->latest()->get(),
+                'categories' => Category::all(),
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Synchronize published opportunities to the public portal and return metrics.
+     */
+    public function syncPortal(): JsonResponse
+    {
+        Cache::forget('public_opportunities');
+
+        $publishedCount = Opportunity::where('status', 'Published')->count();
+        $draftCount = Opportunity::where('status', 'Draft')->count();
+        $closedCount = Opportunity::where('status', 'Closed')->count();
+
+        return response()->json([
+            'message' => 'Investor Portal synchronized successfully.',
+            'synced_at' => now()->toIso8601String(),
+            'stats' => [
+                'published' => $publishedCount,
+                'drafts' => $draftCount,
+                'closed' => $closedCount,
+            ]
         ]);
     }
 }

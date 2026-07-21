@@ -49,21 +49,6 @@ export const routes = [
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const navigate = useNavigate()
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await AuthService.logout();
-      notify.success("Logged Out", "You have been successfully signed out.");
-      navigate(PATHS.LOGIN);
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed)
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -160,30 +145,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
               </NavLink>
             ))}
           </nav>
-
-          <div className="p-4 border-t border-white/10 shrink-0">
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="w-full flex items-center gap-4 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-400/10 transition-all group relative disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {isLoggingOut ? (
-                <Spinner className="size-5 text-red-400" />
-              ) : (
-                <Icons.LogOut size={20} className="shrink-0 group-hover:scale-110 transition-transform text-red-400" />
-              )}
-              {!isCollapsed && (
-                <span className="text-sm font-medium text-left flex-1">
-                  {isLoggingOut ? "Logging out..." : "Logout"}
-                </span>
-              )}
-              {isCollapsed && (
-                <div className="absolute left-full ml-4 px-2 py-1 bg-red-900 text-white text-[11px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-red-900/10">
-                  {isLoggingOut ? "Logging out..." : "Logout"}
-                </div>
-              )}
-            </button>
-          </div>
         </div>
       </aside>
     </>

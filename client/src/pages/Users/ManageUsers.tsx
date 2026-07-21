@@ -158,13 +158,47 @@ const ManageUsers = () => {
     }
   };
 
+  // Password Strength Evaluation Helper
+  const evaluatePasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: "", color: "", bg: "", barPercent: 0, hasLength: false, hasUpper: false, hasLower: false, hasNumber: false, hasSpecial: false };
+
+    const hasLength = pass.length >= 8;
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pass);
+
+    let score = 0;
+    if (hasLength) score += 1;
+    if (hasUpper && hasLower) score += 1;
+    if (hasNumber) score += 1;
+    if (hasSpecial) score += 1;
+
+    if (score <= 1) {
+      return { score, label: "Weak", color: "text-red-600", bg: "bg-red-500", barPercent: 25, hasLength, hasUpper, hasLower, hasNumber, hasSpecial };
+    } else if (score === 2 || score === 3) {
+      return { score, label: "Medium", color: "text-amber-600", bg: "bg-amber-500", barPercent: 65, hasLength, hasUpper, hasLower, hasNumber, hasSpecial };
+    } else {
+      return { score, label: "Strong", color: "text-emerald-600", bg: "bg-emerald-500", barPercent: 100, hasLength, hasUpper, hasLower, hasNumber, hasSpecial };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Password Confirmation Check
     if (modalMode !== "view" && formData.password !== formData.password_confirmation) {
-        notify.error("Password Mismatch", "The passwords you entered do not match.");
+      notify.error("Password Mismatch", "The passwords you entered do not match.");
+      return;
+    }
+
+    // Password Strength Check
+    if (modalMode !== "view" && (modalMode === "add" || formData.password !== "")) {
+      const strength = evaluatePasswordStrength(formData.password);
+      if (strength.score < 2) {
+        notify.warning("Weak Password", "Please choose a stronger password matching the security criteria.");
         return;
+      }
     }
 
     setIsSubmitting(true);
@@ -427,8 +461,10 @@ const ManageUsers = () => {
                     </div>
                   )}
 
-                  {modalMode !== "view" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {modalMode !== "view" && (() => {
+                    const pwdStrength = evaluatePasswordStrength(formData.password);
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-medium">New Password</label>
                             <div className="relative">
@@ -450,10 +486,46 @@ const ManageUsers = () => {
                                     {showPassword ? <Icons.EyeOff size={16} /> : <Icons.Eye size={16} />}
                                 </button>
                             </div>
-                            <p className="text-[10px] text-muted-foreground">
+                            
+                            {/* Real-time Password Strength Meter & Checklist */}
+                            {formData.password ? (
+                              <div className="space-y-2 mt-2 pt-1.5 border-t border-slate-100 animate-in fade-in duration-200">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-slate-500 font-medium">Password Strength:</span>
+                                  <span className={`font-extrabold ${pwdStrength.color}`}>{pwdStrength.label}</span>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                  <div
+                                    className={`h-1.5 transition-all duration-300 rounded-full ${pwdStrength.bg}`}
+                                    style={{ width: `${pwdStrength.barPercent}%` }}
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                                  <span className={`flex items-center gap-1 font-medium ${pwdStrength.hasLength ? "text-emerald-600 font-semibold" : "text-slate-400"}`}>
+                                    {pwdStrength.hasLength ? <Icons.CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <Icons.Circle className="w-3 h-3 text-slate-300" />}
+                                    8+ characters
+                                  </span>
+                                  <span className={`flex items-center gap-1 font-medium ${pwdStrength.hasUpper && pwdStrength.hasLower ? "text-emerald-600 font-semibold" : "text-slate-400"}`}>
+                                    {pwdStrength.hasUpper && pwdStrength.hasLower ? <Icons.CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <Icons.Circle className="w-3 h-3 text-slate-300" />}
+                                    Upper & lower
+                                  </span>
+                                  <span className={`flex items-center gap-1 font-medium ${pwdStrength.hasNumber ? "text-emerald-600 font-semibold" : "text-slate-400"}`}>
+                                    {pwdStrength.hasNumber ? <Icons.CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <Icons.Circle className="w-3 h-3 text-slate-300" />}
+                                    Number (0-9)
+                                  </span>
+                                  <span className={`flex items-center gap-1 font-medium ${pwdStrength.hasSpecial ? "text-emerald-600 font-semibold" : "text-slate-400"}`}>
+                                    {pwdStrength.hasSpecial ? <Icons.CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <Icons.Circle className="w-3 h-3 text-slate-300" />}
+                                    Special symbol
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-[10px] text-muted-foreground">
                                 {modalMode === "edit" ? "Leave blank to keep current password." : "Minimum 8 characters required."}
-                            </p>
+                              </p>
+                            )}
                         </div>
+
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Confirm New Password</label>
                             <div className="relative">
@@ -475,9 +547,27 @@ const ManageUsers = () => {
                                     {showConfirmPassword ? <Icons.EyeOff size={16} /> : <Icons.Eye size={16} />}
                                 </button>
                             </div>
+
+                            {/* Live Password Match Indicator */}
+                            {formData.password_confirmation ? (
+                              <div className="mt-2 text-xs animate-in fade-in duration-200">
+                                {formData.password === formData.password_confirmation ? (
+                                  <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
+                                    <Icons.CheckCircle2 className="w-3.5 h-3.5" />
+                                    Passwords match
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1.5 text-red-500 font-bold">
+                                    <Icons.XCircle className="w-3.5 h-3.5" />
+                                    Passwords do not match
+                                  </span>
+                                )}
+                              </div>
+                            ) : null}
                         </div>
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Activity Logs Section (View Mode Only) */}
                   {modalMode === "view" && (

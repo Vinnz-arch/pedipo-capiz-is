@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CategorySeeder::class,
             OpportunitySeeder::class,
+            InquirySeeder::class,
         ]);
     }
 }

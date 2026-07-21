@@ -39,6 +39,31 @@ export const InvestmentManagement: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState<string | null>("Just now");
+
+  const handleSyncPortal = async () => {
+    setIsSyncing(true);
+    try {
+      await OpportunityService.syncPortal();
+      await loadData();
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setLastSyncedTime(timeStr);
+
+      // Broadcast sync event to all open user tabs/windows
+      try {
+        const channel = new BroadcastChannel("pedipo_portal_sync");
+        channel.postMessage({ type: "SYNC_PORTAL", timestamp: new Date().toISOString() });
+        channel.close();
+      } catch (err) {
+        console.warn("BroadcastChannel error:", err);
+      }
+    } catch (error) {
+      console.error("Sync portal error:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Modal & Edit State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -267,21 +292,29 @@ export const InvestmentManagement: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={openCreateModal}
-              className="flex items-center gap-2 bg-[#002B66] hover:bg-[#001D47] text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Create Opportunity</span>
-            </button>
-            <button 
-              onClick={loadData}
-              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all cursor-pointer"
-            >
-              <RefreshCw className="w-4 h-4 text-slate-500" />
-              <span>Sync Portal</span>
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {lastSyncedTime && (
+              <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg self-start sm:self-center">
+                Last Synced: <strong className="text-slate-700">{lastSyncedTime}</strong>
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={openCreateModal}
+                className="flex items-center gap-2 bg-[#002B66] hover:bg-[#001D47] text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Create Opportunity</span>
+              </button>
+              <button 
+                onClick={handleSyncPortal}
+                disabled={isSyncing}
+                className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all cursor-pointer disabled:opacity-70"
+              >
+                <RefreshCw className={`w-4 h-4 text-slate-500 ${isSyncing ? "animate-spin text-blue-600" : ""}`} />
+                <span>{isSyncing ? "Syncing..." : "Sync Portal"}</span>
+              </button>
+            </div>
           </div>
         </div>
 

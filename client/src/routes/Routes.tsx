@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PATHS } from "./paths";
-import ManageInquiries from "@/pages/ManageInquires/ManageInquires";
 import AuthGuard from "../components/auth/AuthGuard";
 import UserAuthGuard from "../components/auth/UserAuthGuard";
 import GuestGuard from "../components/auth/GuestGuard";
@@ -29,6 +28,8 @@ const UserLogin = lazyWithDelay(() => import("../pages/auth/UserLogin"))
 const UserDashboard = lazyWithDelay(() => import("../pages/UserDashboard"))
 const Municipalities = lazyWithDelay(() => import("../pages/Municipalities/Municipalities"))
 const InvestmentManagement = lazyWithDelay(() => import("../pages/InvestmentManagement/InvestmentManagement"))
+const InvestorPortal = lazyWithDelay(() => import("../pages/user/InvestorPortal"))
+const ManageInquiries = lazyWithDelay(() => import("../pages/ManageInquires/ManageInquires"))
 
 const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType<any>>) => (
   <Suspense fallback={<LoadingScreen />}>
@@ -57,85 +58,87 @@ export const Routes = createBrowserRouter([
     element: <Navigate to={PATHS.LOGIN} replace />,
   },
 
-  // Authenticated
+  // Authenticated Admin Routes
   {
     path: PATHS.APP.ROOT,
-    children: [
-      {
-        index: true,
-        element: (
-          <AuthGuard>
-            <Navigate to={PATHS.APP.DASHBOARD} replace />
-          </AuthGuard>
-        ),
-      },
-      {
-        path: "dashboard",
-        element: (
-          <AuthGuard>
-            {withSuspense(Dashboard)}
-          </AuthGuard>
-        ),
-      },
-      {
-        path: "manageInquires",
-        element: (
-          <AuthGuard>
-            <ManageInquiries />
-          </AuthGuard>
-        )
-      },
-      {
-        path: "manageUsers",
-        element: (
-          <AuthGuard>
-            {withSuspense(ManageUsers)}
-          </AuthGuard>
-        )
-      },
-      {
-        path: "manageMunicipalities",
-        element: (
-          <AuthGuard>
-            {withSuspense(Municipalities)}
-          </AuthGuard>
-        )
-      },
-      {
-        path: "manageInvestmentManagement",
-        element: (
-          <AuthGuard>
-            {withSuspense(InvestmentManagement)}
-          </AuthGuard>
-        )
-      },
-      {
-        path: "manageDataManagement",
-        element: (
-          <AuthGuard>
-            <DataManagement />
-          </AuthGuard>
-        )
-      }
-    ]
+    element: (
+      <AuthGuard>
+        <Navigate to={PATHS.APP.DASHBOARD} replace />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.DASHBOARD,
+    element: (
+      <AuthGuard>
+        {withSuspense(Dashboard)}
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.MANAGE_INQUIRIES,
+    element: (
+      <AuthGuard>
+        {withSuspense(ManageInquiries)}
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.MANAGE_USERS,
+    element: (
+      <AuthGuard>
+        {withSuspense(ManageUsers)}
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.MANAGE_MUNICIPALITIES,
+    element: (
+      <AuthGuard>
+        {withSuspense(Municipalities)}
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.MANAGE_INVESTMENT_MANAGEMENT,
+    element: (
+      <AuthGuard>
+        {withSuspense(InvestmentManagement)}
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.MANAGE_DATA_MANAGEMENT,
+    element: (
+      <AuthGuard>
+        <DataManagement />
+      </AuthGuard>
+    ),
   },
 
-  // User Portal
+  // User Portal Routes
   {
     path: PATHS.PORTAL.ROOT,
-    children: [
-      {
-        index: true,
-        element: <Navigate to={PATHS.PORTAL.DASHBOARD} replace />,
-      },
-      {
-        path: "dashboard",
-        element: (
-          <UserAuthGuard>
-            {withSuspense(UserDashboard)}
-          </UserAuthGuard>
-        ),
-      },
-    ]
+    element: (
+      <UserAuthGuard>
+        <Navigate to={PATHS.PORTAL.DASHBOARD} replace />
+      </UserAuthGuard>
+    ),
+  },
+  {
+    path: PATHS.PORTAL.DASHBOARD,
+    element: (
+      <UserAuthGuard>
+        {withSuspense(UserDashboard)}
+      </UserAuthGuard>
+    ),
+  },
+  {
+    path: PATHS.PORTAL.INVESTOR_PORTAL,
+    element: (
+      <UserAuthGuard>
+        {withSuspense(InvestorPortal)}
+      </UserAuthGuard>
+    ),
   },
 ]);
