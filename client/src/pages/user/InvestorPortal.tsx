@@ -3,16 +3,19 @@ import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
 import { 
   Building2, 
   Search, 
-  TrendingUp, 
   MapPin, 
-  Sparkles, 
-  CheckCircle2, 
   Send, 
   X,
   Info,
-  SlidersHorizontal,
   ArrowUpRight,
-  RefreshCw
+  RefreshCw,
+  Check,
+  ArrowLeft,
+  ArrowRight,
+  FileText,
+  FolderOpen,
+  Upload,
+  Trash2
 } from "lucide-react";
 import { ApiHandler } from "@/api/ApiHandler";
 import { notify } from "@/util/notify";
@@ -35,6 +38,7 @@ interface OpportunityData {
   incentive_package?: string;
   image_path?: string;
   status: string;
+  location?: string;
 }
 
 export const InvestorPortal: React.FC = () => {
@@ -44,12 +48,26 @@ export const InvestorPortal: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Inquiry Modal State
+  // Inquiry Modal State & Wizard
   const [inquiryModalProject, setInquiryModalProject] = useState<OpportunityData | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Step 1: Investor Info
   const [investorName, setInvestorName] = useState("");
   const [investorEmail, setInvestorEmail] = useState("");
   const [investorCompany, setInvestorCompany] = useState("");
+  const [investorPhone, setInvestorPhone] = useState("");
+  const [investorAddress, setInvestorAddress] = useState("");
+
+  // Step 2: Opportunity Details
+  const [investorSubject, setInvestorSubject] = useState("");
+  const [inquiryPurpose, setInquiryPurpose] = useState("");
   const [inquiryMessage, setInquiryMessage] = useState("");
+
+  // Step 3: Document Uploads (Simulated in local state)
+  const [letterOfIntentFile, setLetterOfIntentFile] = useState<File | null>(null);
+  const [supportingDocsFile, setSupportingDocsFile] = useState<File | null>(null);
+
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
 
   const resolveImageUrl = (path?: string) => {
@@ -109,26 +127,83 @@ export const InvestorPortal: React.FC = () => {
 
   const openInquiryModal = (opp: OpportunityData) => {
     setInquiryModalProject(opp);
+    setCurrentStep(1);
     const clientUser = JSON.parse(localStorage.getItem("client_user") || "{}");
     setInvestorName(clientUser.fullname || "");
     setInvestorEmail(clientUser.email || "");
     setInvestorCompany("");
+    setInvestorPhone("");
+    setInvestorAddress("");
+    setInvestorSubject(`Inquiry on ${opp.project_name}`);
+    setInquiryPurpose("Partners, Suppliers & Sites");
     setInquiryMessage(`Hello, I am interested in exploring investment opportunities for ${opp.project_name}. Please send further project proposals and feasibility data.`);
+    setLetterOfIntentFile(null);
+    setSupportingDocsFile(null);
+  };
+
+  const isStepValid = (stepNum: number) => {
+    if (stepNum === 1) {
+      return (
+        investorName.trim().length > 0 &&
+        investorEmail.trim().length > 0 &&
+        investorEmail.includes("@") &&
+        investorPhone.trim().length > 0 &&
+        investorAddress.trim().length > 0
+      );
+    }
+    if (stepNum === 2) {
+      return (
+        investorSubject.trim().length > 0 &&
+        inquiryPurpose.trim().length > 0 &&
+        inquiryMessage.trim().length > 0
+      );
+    }
+    // Step 3 (documents) is optional
+    return true;
   };
 
   const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!investorName || !investorEmail) return;
+    if (currentStep < 4) {
+      return;
+    }
+    if (!isStepValid(1) || !isStepValid(2)) {
+      notify.error("Validation Error", "Please fill in all required fields before submitting.");
+      return;
+    }
 
     setIsSubmittingInquiry(true);
     try {
-      await InquiryService.submit({
-        opportunity_id: inquiryModalProject?.id,
-        investor_name: investorName.trim(),
-        email: investorEmail.trim(),
-        company: investorCompany.trim() || undefined,
-        message: inquiryMessage.trim(),
-      });
+      const formData = new FormData();
+      if (inquiryModalProject?.id) {
+        formData.append("opportunity_id", String(inquiryModalProject.id));
+      }
+      formData.append("investor_name", investorName.trim());
+      formData.append("email", investorEmail.trim());
+      if (investorCompany.trim()) {
+        formData.append("company", investorCompany.trim());
+      }
+      formData.append("contact_number", investorPhone.trim());
+      formData.append("address", investorAddress.trim());
+      formData.append("subject", investorSubject.trim());
+      formData.append("purpose", inquiryPurpose);
+      formData.append("message", inquiryMessage.trim());
+
+      if (letterOfIntentFile) {
+        formData.append("letter_of_intent", letterOfIntentFile);
+      }
+      if (supportingDocsFile) {
+        formData.append("supporting_documents", supportingDocsFile);
+      }
+
+      const res = await InquiryService.submit(formData);
+      
+      const date = res.inquiry.created_at ? new Date(res.inquiry.created_at) : new Date();
+      const year = date.getFullYear();
+      const paddedId = String(res.inquiry.id).padStart(3, "0");
+      const requestNum = `#IPS-${year}-${paddedId}`;
+      
+      notify.success("Inquiry Submitted", `Investment inquiry submitted successfully! Reference: ${requestNum}`);
       setInquiryModalProject(null);
     } catch (error) {
       console.error("Failed to submit inquiry:", error);
@@ -150,34 +225,6 @@ export const InvestorPortal: React.FC = () => {
   return (
     <ClientMainLayout>
       <div className="space-y-8 pb-12 font-sans">
-        {/* Hero Banner Section */}
-        <div className="relative rounded-3xl bg-gradient-to-br from-[#002B66] via-[#001D47] to-[#0B2545] p-8 md:p-12 text-white overflow-hidden shadow-xl border border-blue-900/40">
-          <div className="absolute -right-12 -bottom-12 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-          <div className="relative z-10 max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs font-semibold text-blue-200">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Capiz Economic & Investment Development</span>
-            </div>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
-              Invest in Capiz: Seafood Capital & Panay Growth Hub
-            </h1>
-            <p className="text-sm md:text-base text-blue-100/80 leading-relaxed max-w-2xl font-normal">
-              Synchronized directly from the Provincial Economic Development and Investment Promotion Office (PEDIPO). Discover verified high-yield projects, priority incentives, and strategic land sites.
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center gap-6 text-xs text-blue-200 font-semibold">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>PEDIPO Verified Listings</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Priority Local Fiscal Incentives</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Filter & Search Bar */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
           {/* Category Chips */}
@@ -273,7 +320,7 @@ export const InvestorPortal: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mb-1">
                           <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Roxas City, Capiz</span>
+                          <span>{opp.location || "Roxas City, Capiz"}</span>
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                           {opp.project_name}
@@ -328,10 +375,11 @@ export const InvestorPortal: React.FC = () => {
                   <div className="p-6 pt-0">
                     <button
                       onClick={() => openInquiryModal(opp)}
-                      className="w-full bg-[#002B66] hover:bg-[#001D47] text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full relative overflow-hidden group/btn bg-gradient-to-r from-[#002B66] to-[#003399] hover:from-[#003399] hover:to-[#002B7F] text-white py-3 px-4 rounded-xl font-extrabold text-xs shadow-md hover:shadow-lg hover:shadow-blue-900/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span>Inquire Now</span>
-                      <ArrowUpRight className="w-4 h-4" />
+                      <span className="relative z-10">Inquire Now</span>
+                      <ArrowUpRight className="w-4 h-4 relative z-10 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                     </button>
                   </div>
                 </div>
@@ -340,101 +388,445 @@ export const InvestorPortal: React.FC = () => {
           </div>
         )}
 
-        {/* Investment Inquiry Modal */}
+        {/* Investment Inquiry Wizard Modal */}
         {inquiryModalProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col">
-              {/* Modal Header */}
-              <div className="bg-[#002B66] text-white px-6 py-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold">Submit Investment Inquiry</h3>
-                  <p className="text-xs text-blue-200 mt-0.5">
-                    Project: <span className="font-semibold text-white">{inquiryModalProject.project_name}</span>
-                  </p>
-                </div>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col transition-all">
+              {/* Wizard Header */}
+              <div className="bg-slate-50/80 border-b border-slate-200/80 px-6 py-4 flex flex-col relative">
                 <button
+                  type="button"
                   onClick={() => setInquiryModalProject(null)}
-                  className="p-1 text-white/80 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  className="absolute right-4 top-4 p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
-              </div>
-
-              {/* Form Body */}
-              <form onSubmit={handleInquirySubmit}>
-                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Investor / Representative Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={investorName}
-                      onChange={(e) => setInvestorName(e.target.value)}
-                      placeholder="e.g. John Doe"
-                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66]"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Email Address</label>
-                      <input
-                        type="email"
-                        required
-                        value={investorEmail}
-                        onChange={(e) => setInvestorEmail(e.target.value)}
-                        placeholder="investor@company.com"
-                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66]"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Company / Entity</label>
-                      <input
-                        type="text"
-                        value={investorCompany}
-                        onChange={(e) => setInvestorCompany(e.target.value)}
-                        placeholder="e.g. Global Logistics Inc."
-                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Inquiry Message</label>
-                    <textarea
-                      rows={4}
-                      required
-                      value={inquiryMessage}
-                      onChange={(e) => setInquiryMessage(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] resize-none"
-                    />
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-2.5 text-xs text-blue-900 leading-relaxed">
-                    <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    <span>
-                      Your inquiry will be logged into the PEDIPO Capiz IS Inquiry Management registry for official review.
-                    </span>
-                  </div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold text-slate-800">Investment Inquiry Wizard</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Step-by-step registration for the PEDIPO Investment Registry.
+                  </p>
                 </div>
 
-                {/* Footer */}
-                <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setInquiryModalProject(null)}
-                    className="text-sm font-bold text-slate-600 hover:text-slate-900 px-4 py-2 rounded-xl transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmittingInquiry}
-                    className="bg-[#002B66] hover:bg-[#001D47] text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-70"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>{isSubmittingInquiry ? "Sending Inquiry..." : "Submit Inquiry"}</span>
-                  </button>
+                {/* Progress Stepper Bar */}
+                <div className="relative flex items-center justify-between w-full max-w-xl mx-auto mt-6 mb-2">
+                  <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-200 -translate-y-1/2" />
+                  <div 
+                    className="absolute left-0 top-1/2 h-0.5 bg-[#002B66] -translate-y-1/2 transition-all duration-300" 
+                    style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
+                  />
+
+                  {[
+                    { step: 1, label: "Investor Info" },
+                    { step: 2, label: "Request Information" },
+                    { step: 3, label: "Upload" },
+                    { step: 4, label: "Review" }
+                  ].map((item) => {
+                    const isCompleted = currentStep > item.step;
+                    const isActive = currentStep === item.step;
+
+                    return (
+                      <div key={item.step} className="relative z-10 flex flex-col items-center">
+                        <button
+                          type="button"
+                          disabled={item.step > currentStep && !isStepValid(currentStep)}
+                          onClick={() => {
+                            if (item.step < currentStep || isStepValid(currentStep)) {
+                              setCurrentStep(item.step);
+                            }
+                          }}
+                          className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all duration-300 cursor-pointer ${
+                            isCompleted 
+                              ? "bg-[#002B66] border-[#002B66] text-white" 
+                              : isActive 
+                                ? "bg-[#002B66] border-[#002B66] text-white shadow-md shadow-[#002B66]/25" 
+                                : "bg-slate-50 border-slate-200 text-slate-400"
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <Check className="w-4 h-4 text-white stroke-[3px]" />
+                          ) : (
+                            <span>{item.step}</span>
+                          )}
+                        </button>
+                        <span 
+                          className={`text-[10px] font-bold mt-1.5 transition-all duration-300 ${
+                            isActive || isCompleted ? "text-[#002B66]" : "text-slate-400"
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Form Content */}
+              <form onSubmit={handleInquirySubmit} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                  {/* Step 1: Investor Info */}
+                  {currentStep === 1 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 border-b pb-2">
+                        <span className="bg-blue-50 text-[#002B66] font-bold text-xs px-2.5 py-1 rounded-md">Step 1</span>
+                        <h4 className="text-sm font-bold text-slate-800">Investor Information</h4>
+                      </div>
+                      
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-xs font-bold text-slate-700">Full Name <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          required
+                          value={investorName}
+                          onChange={(e) => setInvestorName(e.target.value)}
+                          placeholder="Juan Dela Cruz"
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700">Company Name (Optional)</label>
+                          <input
+                            type="text"
+                            value={investorCompany}
+                            onChange={(e) => setInvestorCompany(e.target.value)}
+                            placeholder="Example Corporation"
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700">Contact Number <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            required
+                            value={investorPhone}
+                            onChange={(e) => setInvestorPhone(e.target.value)}
+                            placeholder="+63 9XX XXX XXXX"
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-xs font-bold text-slate-700">Email Address <span className="text-red-500">*</span></label>
+                        <input
+                          type="email"
+                          required
+                          value={investorEmail}
+                          onChange={(e) => setInvestorEmail(e.target.value)}
+                          placeholder="juan@example.com"
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-xs font-bold text-slate-700">Address <span className="text-red-500">*</span></label>
+                        <textarea
+                          rows={3}
+                          required
+                          value={investorAddress}
+                          onChange={(e) => setInvestorAddress(e.target.value)}
+                          placeholder="Street, City, Province, Zip Code"
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] resize-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: Opportunity Details */}
+                  {currentStep === 2 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 border-b pb-2">
+                        <span className="bg-blue-50 text-[#002B66] font-bold text-xs px-2.5 py-1 rounded-md">Step 2</span>
+                        <h4 className="text-sm font-bold text-slate-800">Request Information</h4>
+                      </div>
+
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-xs font-bold text-slate-700">Subject of Inquiry <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          required
+                          value={investorSubject}
+                          onChange={(e) => setInvestorSubject(e.target.value)}
+                          placeholder="e.g. Partnership Request for Processing Hub"
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-xs font-bold text-slate-700">Purpose of Inquiry <span className="text-red-500">*</span></label>
+                        <select
+                          value={inquiryPurpose}
+                          onChange={(e) => setInquiryPurpose(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                        >
+                          <option value="Licenses & Permits">Licenses & Permits</option>
+                          <option value="Partners, Suppliers & Sites">Partners, Suppliers & Sites</option>
+                          <option value="Manpower & Services">Manpower & Services</option>
+                          <option value="Business Concerns">Business Concerns</option>
+                          <option value="Other Requests">Other Requests</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-xs font-bold text-slate-700">Message <span className="text-red-500">*</span></label>
+                        <textarea
+                          rows={4}
+                          required
+                          value={inquiryMessage}
+                          onChange={(e) => setInquiryMessage(e.target.value)}
+                          placeholder="Brief message detailing your inquiry..."
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] resize-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 3: Document Upload */}
+                  {currentStep === 3 && (
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-2 border-b pb-2">
+                        <span className="bg-blue-50 text-[#002B66] font-bold text-xs px-2.5 py-1 rounded-md">Step 3</span>
+                        <h4 className="text-sm font-bold text-slate-800">Document Upload</h4>
+                      </div>
+
+                      {/* Letter of Intent */}
+                      <div className="space-y-2 text-left">
+                        <label className="text-xs font-bold text-slate-700 block">Letter of Intent</label>
+                        {letterOfIntentFile ? (
+                          <div className="flex items-center justify-between p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-8 h-8 text-[#002B66]" />
+                              <div className="text-left">
+                                <p className="text-xs font-bold text-slate-800 truncate max-w-[240px] md:max-w-[320px]">{letterOfIntentFile.name}</p>
+                                <p className="text-[10px] text-slate-400 font-medium">{(letterOfIntentFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                              </div>
+                            </div>
+                            <button 
+                              type="button"
+                              onClick={() => setLetterOfIntentFile(null)}
+                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label 
+                            htmlFor="loi-file"
+                            className="flex items-center justify-between p-4 border-2 border-dashed border-slate-200 hover:border-[#002B66] rounded-xl cursor-pointer bg-slate-50/50 hover:bg-blue-50/10 transition-all group"
+                          >
+                            <input 
+                              id="loi-file"
+                              type="file"
+                              accept=".pdf"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setLetterOfIntentFile(e.target.files[0]);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                            <div className="flex items-center gap-3.5">
+                              <div className="p-3 bg-blue-50 rounded-xl group-hover:bg-blue-100/60 transition-colors">
+                                <FileText className="w-6 h-6 text-[#002B66]" />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-xs font-bold text-slate-800 group-hover:text-[#002B66] transition-colors">Letter of Intent</p>
+                                <p className="text-[10px] text-slate-400 font-medium">Formal signed letter (PDF, Max 10MB)</p>
+                              </div>
+                            </div>
+                            <div className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg border border-slate-200/80">
+                              <Upload className="w-4 h-4 text-slate-600" />
+                            </div>
+                          </label>
+                        )}
+                      </div>
+
+                      {/* Supporting Documents */}
+                      <div className="space-y-2 text-left">
+                        <label className="text-xs font-bold text-slate-700 block">Supporting Documents</label>
+                        {supportingDocsFile ? (
+                          <div className="flex items-center justify-between p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                            <div className="flex items-center gap-3">
+                              <FolderOpen className="w-8 h-8 text-[#002B66]" />
+                              <div className="text-left">
+                                <p className="text-xs font-bold text-slate-800 truncate max-w-[240px] md:max-w-[320px]">{supportingDocsFile.name}</p>
+                                <p className="text-[10px] text-slate-400 font-medium">{(supportingDocsFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                              </div>
+                            </div>
+                            <button 
+                              type="button"
+                              onClick={() => setSupportingDocsFile(null)}
+                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label 
+                            htmlFor="supporting-file"
+                            className="flex items-center justify-between p-4 border-2 border-dashed border-slate-200 hover:border-[#002B66] rounded-xl cursor-pointer bg-slate-50/50 hover:bg-blue-50/10 transition-all group"
+                          >
+                            <input 
+                              id="supporting-file"
+                              type="file"
+                              accept=".pdf,.zip,.rar"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setSupportingDocsFile(e.target.files[0]);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                            <div className="flex items-center gap-3.5">
+                              <div className="p-3 bg-blue-50 rounded-xl group-hover:bg-blue-100/60 transition-colors">
+                                <FolderOpen className="w-6 h-6 text-[#002B66]" />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-xs font-bold text-slate-800 group-hover:text-[#002B66] transition-colors">Supporting Documents</p>
+                                <p className="text-[10px] text-slate-400 font-medium">Permits, IDs, etc (ZIP/PDF, Max 25MB)</p>
+                              </div>
+                            </div>
+                            <div className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg border border-slate-200/80">
+                              <Upload className="w-4 h-4 text-slate-600" />
+                            </div>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 4: Review your Inquiry */}
+                  {currentStep === 4 && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 border-b pb-2">
+                        <span className="bg-blue-50 text-[#002B66] font-bold text-xs px-2.5 py-1 rounded-md">Step 4</span>
+                        <h4 className="text-sm font-bold text-slate-800">Review your Inquiry</h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600">
+                        {/* Investor Info Panel */}
+                        <div className="space-y-3.5 border-r border-slate-200/80 pr-4 text-left">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">INVESTOR INFO</span>
+                          <div>
+                            <p className="font-extrabold text-slate-800 text-sm">{investorName}</p>
+                            <p className="text-slate-500 font-medium mt-0.5">{investorCompany || "No company provided"}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-400 text-[10px] uppercase">Contact Number</p>
+                            <p className="font-semibold text-slate-700">{investorPhone}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-400 text-[10px] uppercase">Email Address</p>
+                            <p className="font-semibold text-slate-700">{investorEmail}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-400 text-[10px] uppercase">Address</p>
+                            <p className="font-semibold text-slate-700 whitespace-pre-line leading-relaxed">{investorAddress}</p>
+                          </div>
+                        </div>
+
+                        {/* Investment Details Panel */}
+                        <div className="space-y-4 text-left">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">INVESTMENT DETAILS</span>
+                          <div>
+                            <p className="font-semibold text-slate-400 text-[10px] uppercase">Subject of Inquiry</p>
+                            <p className="font-extrabold text-slate-800 text-xs">{investorSubject}</p>
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-slate-400 text-[10px] uppercase">Purpose of Inquiry</p>
+                            <p className="font-extrabold text-[#002B66] text-xs leading-relaxed">{inquiryPurpose}</p>
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-slate-400 text-[10px] uppercase">Message</p>
+                            <p className="text-slate-700 italic bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-line leading-relaxed">
+                              {inquiryMessage || "No message provided."}
+                            </p>
+                          </div>
+                          {(letterOfIntentFile || supportingDocsFile) && (
+                            <div className="space-y-1.5">
+                              <p className="font-semibold text-slate-400 text-[10px] uppercase">Documents</p>
+                              <div className="text-[10px] font-bold space-y-1 text-[#002B66]">
+                                {letterOfIntentFile && (
+                                  <div className="flex items-center gap-1.5">
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>LOI: {letterOfIntentFile.name}</span>
+                                  </div>
+                                )}
+                                {supportingDocsFile && (
+                                  <div className="flex items-center gap-1.5">
+                                    <FolderOpen className="w-3.5 h-3.5" />
+                                    <span>Supporting: {supportingDocsFile.name}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Warning/Certification Bar */}
+                      <div className="bg-[#002B66] border border-blue-800 rounded-xl p-3 flex items-start gap-2.5 text-xs text-white leading-relaxed text-left shadow-xs">
+                        <Info className="w-4.5 h-4.5 text-blue-200 shrink-0 mt-0.5 animate-pulse" />
+                        <span>
+                          By submitting, you certify that all information is accurate. Process takes 3-5 business days.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Controls */}
+                <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex items-center justify-between gap-3 shrink-0">
+                  {currentStep > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep((prev) => prev - 1)}
+                      className="text-xs font-bold text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100 px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setInquiryModalProject(null)}
+                      className="text-xs font-bold text-slate-500 hover:text-slate-800 px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  )}
+
+                   {currentStep < 4 ? (
+                    <button
+                      key="next-btn"
+                      type="button"
+                      disabled={!isStepValid(currentStep)}
+                      onClick={() => {
+                        if (isStepValid(currentStep)) {
+                          setCurrentStep((prev) => prev + 1);
+                        }
+                      }}
+                      className="bg-[#002B66] hover:bg-[#001D47] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <span>Next Step</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      key="submit-btn"
+                      type="submit"
+                      disabled={isSubmittingInquiry}
+                      className="bg-[#746006] hover:bg-[#604f05] text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-70 active:scale-[0.98]"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{isSubmittingInquiry ? "Submitting Final Inquiry..." : "Submit Final Inquiry"}</span>
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

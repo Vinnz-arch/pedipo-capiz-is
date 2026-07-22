@@ -30,6 +30,8 @@ const Municipalities = lazyWithDelay(() => import("../pages/Municipalities/Munic
 const InvestmentManagement = lazyWithDelay(() => import("../pages/InvestmentManagement/InvestmentManagement"))
 const InvestorPortal = lazyWithDelay(() => import("../pages/user/InvestorPortal"))
 const ManageInquiries = lazyWithDelay(() => import("../pages/ManageInquires/ManageInquires"))
+const LandingPage = lazyWithDelay(() => import("../pages/LandingPage"))
+const ManageLandingPage = lazyWithDelay(() => import("../pages/ManageLandingPage/ManageLandingPage"))
 
 const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType<any>>) => (
   <Suspense fallback={<LoadingScreen />}>
@@ -55,7 +57,9 @@ export const Routes = createBrowserRouter([
   },
   {
     path: PATHS.HOME,
-    element: <Navigate to={PATHS.LOGIN} replace />,
+    element: (
+      withSuspense(LandingPage)
+    ),
   },
 
   // Authenticated Admin Routes
@@ -112,6 +116,14 @@ export const Routes = createBrowserRouter([
     element: (
       <AuthGuard>
         <DataManagement />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.MANAGE_LANDING_PAGE,
+    element: (
+      <AuthGuard>
+        {withSuspense(ManageLandingPage)}
       </AuthGuard>
     ),
   },

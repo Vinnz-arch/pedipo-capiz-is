@@ -15,7 +15,8 @@ export const PATHS = {
     MANAGE_USERS: `${APP_ROOT}/manageUsers`,
     MANAGE_MUNICIPALITIES: `${APP_ROOT}/manageMunicipalities`,
     MANAGE_INVESTMENT_MANAGEMENT: `${APP_ROOT}/manageInvestmentManagement`,
-    MANAGE_DATA_MANAGEMENT: `${APP_ROOT}/manageDataManagement`
+    MANAGE_DATA_MANAGEMENT: `${APP_ROOT}/manageDataManagement`,
+    MANAGE_LANDING_PAGE: `${APP_ROOT}/manageLandingPage`
   },
 
   // User Portal

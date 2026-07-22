@@ -17,6 +17,12 @@ return new class extends Migration
             $table->string('investor_name');
             $table->string('email');
             $table->string('company')->nullable();
+            $table->string('contact_number')->nullable();
+            $table->text('address')->nullable();
+            $table->string('subject')->nullable();
+            $table->string('purpose')->nullable();
+            $table->string('letter_of_intent')->nullable();
+            $table->string('supporting_documents')->nullable();
             $table->text('message');
             $table->enum('status', ['Pending', 'Under Review', 'Approved', 'Rejected', 'Responded'])->default('Pending');
             $table->text('admin_notes')->nullable();

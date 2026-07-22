@@ -40,6 +40,7 @@ class OpportunityController extends Controller
             'description' => 'nullable|string',
             'incentive_package' => 'nullable|string',
             'status' => 'nullable|string|in:Draft,Published,Closed',
+            'location' => 'nullable|string|max:255',
         ];
 
         if ($request->hasFile('image')) {
@@ -64,6 +65,7 @@ class OpportunityController extends Controller
             'incentive_package' => $validated['incentive_package'] ?? $validated['key_incentives'] ?? null,
             'image_path' => $imagePath ?? '/images/seafood_hub.png',
             'status' => $validated['status'] ?? 'Draft',
+            'location' => $validated['location'] ?? 'Roxas City, Capiz',
         ]);
 
         Cache::forget('public_opportunities');
@@ -96,6 +98,7 @@ class OpportunityController extends Controller
             'description' => 'nullable|string',
             'incentive_package' => 'nullable|string',
             'status' => 'nullable|string|in:Draft,Published,Closed',
+            'location' => 'nullable|string|max:255',
         ];
 
         if ($request->hasFile('image')) {

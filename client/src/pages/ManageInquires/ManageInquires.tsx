@@ -1,23 +1,19 @@
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/Mainlayout";
 import { 
-  FileText, 
   Search, 
   RefreshCw, 
   MessageSquare, 
   Clock, 
   CheckCircle2, 
-  XCircle, 
   AlertCircle, 
   Eye, 
   Trash2, 
   X, 
   Send,
-  Building2,
-  Mail,
-  User,
-  Calendar,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  FolderOpen
 } from "lucide-react";
 import { InquiryService, type InquiryData } from "@/services/InquiryService";
 
@@ -35,6 +31,14 @@ export const ManageInquiries: React.FC = () => {
 
   // Delete Modal State
   const [deletingInquiry, setDeletingInquiry] = useState<InquiryData | null>(null);
+
+  // Helper to format inquiry ID into dynamic request number format: #IPS-YYYY-XXX
+  const getRequestNumber = (item: InquiryData) => {
+    const date = item.created_at ? new Date(item.created_at) : new Date();
+    const year = date.getFullYear();
+    const paddedId = String(item.id).padStart(3, "0");
+    return `#IPS-${year}-${paddedId}`;
+  };
 
   const loadInquiries = async () => {
     setIsLoading(true);
@@ -130,10 +134,220 @@ export const ManageInquiries: React.FC = () => {
     }
   };
 
+  // Helper to parse and render structured inquiry Markdown content
+  // Helper to parse and render structured inquiry content from columns or markdown fallback
+  const renderInquiryContent = (inquiry: InquiryData) => {
+    // If the columns exist, render them directly!
+    if (inquiry.contact_number || inquiry.address || inquiry.subject || inquiry.purpose) {
+      return (
+        <div className="space-y-4">
+          {/* Investor Info Section */}
+          <div className="space-y-2 text-left">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Investor Information</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Representative Name</p>
+                <p className="text-xs font-semibold text-slate-800">{inquiry.investor_name}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Company Name</p>
+                <p className="text-xs font-semibold text-slate-800">{inquiry.company || "Not provided"}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Contact Number</p>
+                <p className="text-xs font-semibold text-slate-800">{inquiry.contact_number || "Not provided"}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Email Address</p>
+                <p className="text-xs font-semibold text-slate-800">{inquiry.email}</p>
+              </div>
+              <div className="space-y-0.5 sm:col-span-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Address</p>
+                <p className="text-xs font-semibold text-slate-800 whitespace-pre-line">{inquiry.address || "Not provided"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Request Information Section */}
+          <div className="space-y-2 text-left">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Request Information</span>
+            <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Subject of Inquiry</p>
+                <p className="text-xs font-semibold text-slate-800">{inquiry.subject || "Not specified"}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Purpose of Inquiry</p>
+                <p className="text-xs font-semibold text-[#002B66]">{inquiry.purpose || "Not specified"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Message</p>
+                <p className="text-xs text-slate-700 italic bg-white p-3 rounded-lg border border-slate-200/60 whitespace-pre-line leading-relaxed">
+                  {inquiry.message}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Attached Documents Section */}
+          {(inquiry.letter_of_intent || inquiry.supporting_documents) && (
+            <div className="space-y-2 text-left">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Attached Documents</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                {inquiry.letter_of_intent && (
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Letter of Intent</p>
+                    <a 
+                      href={`http://localhost:8000${inquiry.letter_of_intent}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Download LOI</span>
+                    </a>
+                  </div>
+                )}
+                {inquiry.supporting_documents && (
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Supporting Documents</p>
+                    <a 
+                      href={`http://localhost:8000${inquiry.supporting_documents}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      <span>Download Documents</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Markdown legacy parser check
+    const message = inquiry.message;
+    if (message.includes("### Investor Information")) {
+      const sections = message.split("### ");
+      
+      const getListItems = (sectionText: string) => {
+        const lines = sectionText.split("\n");
+        return lines
+          .map(line => line.trim())
+          .filter(line => line.startsWith("- **"))
+          .map(line => {
+            const match = line.match(/^-\s+\*\*(.*?):\*\*\s+(.*)$/);
+            if (match) {
+              return { label: match[1], value: match[2] };
+            }
+            return null;
+          })
+          .filter((item): item is { label: string; value: string } => item !== null);
+      };
+
+      const getOpportunityDescription = (sectionText: string) => {
+        const parts = sectionText.split("- **Description / Message:**");
+        if (parts.length > 1) {
+          return parts[1].trim();
+        }
+        return "";
+      };
+
+      let investorInfo: { label: string; value: string }[] = [];
+      let opportunityDetails: { label: string; value: string }[] = [];
+      let attachedDocs: { label: string; value: string }[] = [];
+      let opportunityDesc = "";
+
+      sections.forEach(sec => {
+        if (sec.startsWith("Investor Information")) {
+          investorInfo = getListItems(sec);
+        } else if (sec.startsWith("Opportunity Details")) {
+          opportunityDetails = getListItems(sec);
+          opportunityDesc = getOpportunityDescription(sec);
+        } else if (sec.startsWith("Attached Documents")) {
+          attachedDocs = getListItems(sec);
+        }
+      });
+
+      return (
+        <div className="space-y-4">
+          {/* Investor Info Section */}
+          {investorInfo.length > 0 && (
+            <div className="space-y-2 text-left">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Investor Information</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                {investorInfo.map((item, idx) => (
+                  <div key={idx} className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{item.label}</p>
+                    <p className="text-xs font-semibold text-slate-800">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Opportunity Details Section */}
+          {(opportunityDetails.length > 0 || opportunityDesc) && (
+            <div className="space-y-2 text-left">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Opportunity Details</span>
+              <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                {opportunityDetails.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {opportunityDetails.map((item, idx) => (
+                      <div key={idx} className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">{item.label}</p>
+                        <p className="text-xs font-semibold text-slate-800">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {opportunityDesc && (
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Description / Message</p>
+                    <p className="text-xs text-slate-700 italic bg-white p-3 rounded-lg border border-slate-200/60 whitespace-pre-line leading-relaxed">
+                      {opportunityDesc}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Attached Documents Section */}
+          {attachedDocs.length > 0 && (
+            <div className="space-y-2 text-left">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Attached Documents</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                {attachedDocs.map((item, idx) => (
+                  <div key={idx} className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{item.label}</p>
+                    <p className="text-xs font-semibold text-[#002B66]">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Legacy fallback
+    return (
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-700 leading-relaxed font-normal text-left whitespace-pre-line">
+        "{message}"
+      </div>
+    );
+  };
+
   // Filter Logic
   const filteredInquiries = inquiries.filter((item) => {
     const matchesStatus = statusFilter === "All" || item.status === statusFilter;
     const matchesSearch =
+      getRequestNumber(item).toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.investor_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.company && item.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -275,6 +489,7 @@ export const ManageInquiries: React.FC = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                    <th className="px-6 py-3.5">REQUEST #</th>
                     <th className="px-6 py-3.5">INVESTOR & ENTITY</th>
                     <th className="px-4 py-3.5">CONTACT EMAIL</th>
                     <th className="px-4 py-3.5">TARGET OPPORTUNITY</th>
@@ -286,13 +501,13 @@ export const ManageInquiries: React.FC = () => {
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
+                      <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
                         Loading inquiry registry...
                       </td>
                     </tr>
                   ) : filteredInquiries.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
+                      <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
                         No inquiries found matching your filters.
                       </td>
                     </tr>
@@ -303,6 +518,11 @@ export const ManageInquiries: React.FC = () => {
                         className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                         onClick={() => openReviewModal(item)}
                       >
+                        {/* Request Number */}
+                        <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold text-[#002B66] group-hover:underline">
+                          {getRequestNumber(item)}
+                        </td>
+
                         {/* Investor Name & Entity */}
                         <td className="px-6 py-4">
                           <div>
@@ -384,7 +604,7 @@ export const ManageInquiries: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold">Official Administrative Review</h3>
                   <p className="text-xs text-blue-200 mt-0.5">
-                    Inquiry #{selectedInquiry.id} &bull; Received from{" "}
+                    Request {getRequestNumber(selectedInquiry)} &bull; Received from{" "}
                     <span className="font-semibold text-white">{selectedInquiry.investor_name}</span>
                   </p>
                 </div>
@@ -408,6 +628,11 @@ export const ManageInquiries: React.FC = () => {
                       <h4 className="text-base font-bold text-[#002B66] mt-0.5">
                         {selectedInquiry.opportunity?.project_name || "General Investment Inquiry"}
                       </h4>
+                      {selectedInquiry.opportunity?.location && (
+                        <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
+                          Location / Municipality: {selectedInquiry.opportunity.location}
+                        </span>
+                      )}
                     </div>
                     {selectedInquiry.opportunity?.category && (
                       <span className="bg-white text-blue-700 text-xs font-bold px-3 py-1 rounded-full border border-blue-200">
@@ -416,37 +641,12 @@ export const ManageInquiries: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Investor Details Pair */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Investor / Entity
-                      </span>
-                      <p className="text-sm font-semibold text-slate-800">
-                        {selectedInquiry.investor_name}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {selectedInquiry.company || "Individual Investor"}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Contact Email
-                      </span>
-                      <p className="text-sm font-semibold text-blue-600">
-                        {selectedInquiry.email}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Inquiry Message */}
+                  {/* Request Information Details */}
                   <div className="space-y-1.5">
-                    <span className="text-xs font-bold text-slate-700 block">
-                      Investor Inquiry Message
+                    <span className="text-xs font-bold text-slate-700 block text-left">
+                      Request Information Details
                     </span>
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-700 leading-relaxed font-normal">
-                      "{selectedInquiry.message}"
-                    </div>
+                    {renderInquiryContent(selectedInquiry)}
                   </div>
 
                   <hr className="border-slate-100" />

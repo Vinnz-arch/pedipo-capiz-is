@@ -7,10 +7,17 @@ export interface InquiryData {
     id: number | string;
     project_name: string;
     category?: { name: string };
+    location?: string;
   };
   investor_name: string;
   email: string;
   company?: string;
+  contact_number?: string;
+  address?: string;
+  subject?: string;
+  purpose?: string;
+  letter_of_intent?: string;
+  supporting_documents?: string;
   message: string;
   status: "Pending" | "Under Review" | "Approved" | "Rejected" | "Responded";
   admin_notes?: string;
@@ -26,17 +33,10 @@ export const InquiryService = {
   /**
    * Submit a new investor inquiry from the public Capiz Investor Portal.
    */
-  submit: async (data: {
-    opportunity_id?: number | string;
-    investor_name: string;
-    email: string;
-    company?: string;
-    message: string;
-  }) => {
+  submit: async (data: FormData) => {
     return await ApiHandler.post<{ message: string; inquiry: InquiryData }>(
       "/v1/portal/inquiries",
-      data,
-      "Investment inquiry submitted successfully!"
+      data
     );
   },
 

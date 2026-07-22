@@ -31,14 +31,38 @@ class InquiryController extends Controller
             'investor_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'company' => 'nullable|string|max:255',
+            'contact_number' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+            'subject' => 'required|string|max:255',
+            'purpose' => 'required|string|max:255',
+            'letter_of_intent' => 'nullable|file|mimes:pdf|max:10240',
+            'supporting_documents' => 'nullable|file|mimes:pdf,zip,rar|max:25600',
             'message' => 'required|string',
         ]);
+
+        $loiPath = null;
+        if ($request->hasFile('letter_of_intent')) {
+            $path = $request->file('letter_of_intent')->store('inquiries/loi', 'public');
+            $loiPath = '/storage/' . $path;
+        }
+
+        $supportingDocsPath = null;
+        if ($request->hasFile('supporting_documents')) {
+            $path = $request->file('supporting_documents')->store('inquiries/docs', 'public');
+            $supportingDocsPath = '/storage/' . $path;
+        }
 
         $inquiry = Inquiry::create([
             'opportunity_id' => $validated['opportunity_id'] ?? null,
             'investor_name' => $validated['investor_name'],
             'email' => $validated['email'],
             'company' => $validated['company'] ?? null,
+            'contact_number' => $validated['contact_number'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'subject' => $validated['subject'],
+            'purpose' => $validated['purpose'],
+            'letter_of_intent' => $loiPath,
+            'supporting_documents' => $supportingDocsPath,
             'message' => $validated['message'],
             'status' => 'Pending',
         ]);

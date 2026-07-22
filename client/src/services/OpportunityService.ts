@@ -17,6 +17,7 @@ export interface OpportunityData {
   incentive_package?: string;
   image_path?: string;
   status: "Draft" | "Published" | "Closed";
+  location?: string;
   created_at?: string;
   updated_at?: string;
 }

@@ -1,12 +1,10 @@
 import { useState } from "react"
-import { NavLink, useNavigate } from "react-router-dom"
+import { NavLink } from "react-router-dom"
 import * as Icons from "lucide-react";
 import { cn } from "../../lib/utils"
 import { PATHS } from "../../routes/paths"
 import Logo from "../../assets/logo.jpg"
-import { notify } from "../../util/notify"
-import { UserServices } from "../../services/UserServices"
-import { Spinner } from "../../components/ui/spinner";
+
 
 interface ClientSidebarProps {
   isCollapsed: boolean
@@ -20,7 +18,7 @@ export const clientRoutes = [
     icon: Icons.LayoutDashboard,
   },
   {
-    label: "Capiz Investor Portal",
+    label: "Opportunities",
     path: PATHS.PORTAL.INVESTOR_PORTAL,
     icon: Icons.TrendingUp,
   },

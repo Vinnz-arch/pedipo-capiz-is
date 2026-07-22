@@ -1,5 +1,4 @@
 import { ApiHandler } from "../api/ApiHandler";
-import { PATHS } from "../routes/paths";
 
 export interface User {
   id: number;

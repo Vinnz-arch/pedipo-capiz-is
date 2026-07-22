@@ -29,6 +29,7 @@ class OpportunitySeeder extends Seeder
                     'description' => 'Proposed centralized processing facility for sustainable aquamarine exports. Strategically located near the Roxas City Airport and Culasi Port.',
                     'image_path' => '/images/seafood_hub.png',
                     'status' => 'Published',
+                    'location' => 'Roxas City, Capiz',
                 ]
             );
         }
@@ -44,6 +45,7 @@ class OpportunitySeeder extends Seeder
                     'description' => 'Modern IT business park supporting BPOs, tech hubs, and innovation centers with redundant fiber optic connections and power security.',
                     'image_path' => 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
                     'status' => 'Published',
+                    'location' => 'Roxas City, Capiz',
                 ]
             );
         }
@@ -59,6 +61,7 @@ class OpportunitySeeder extends Seeder
                     'description' => 'Luxury eco-friendly beach resort development along the pristine coastlines of Pilar, designed for sustainable tourism and wellness.',
                     'image_path' => 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
                     'status' => 'Draft',
+                    'location' => 'Pilar, Capiz',
                 ]
             );
         }
@@ -74,6 +77,7 @@ class OpportunitySeeder extends Seeder
                     'description' => 'Integrated warehousing and cold-chain facility strategically placed along Panay highway interconnecting Capiz and neighbor provinces.',
                     'image_path' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
                     'status' => 'Closed',
+                    'location' => 'Panay, Capiz',
                 ]
             );
         }

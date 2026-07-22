@@ -6,6 +6,7 @@ use App\Http\Controllers\API\v1\UserController;
 use App\Http\Controllers\API\v1\UserLogController;
 use App\Http\Controllers\API\v1\OpportunityController;
 use App\Http\Controllers\API\v1\InquiryController;
+use App\Http\Controllers\API\v1\LandingPageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,7 @@ Route::post('/v1/user/login', [UserAuthController::class, 'login'])->middleware(
 Route::get('/v1/opportunities', [OpportunityController::class, 'index']);
 Route::get('/v1/portal/opportunities', [OpportunityController::class, 'publicOpportunities']);
 Route::post('/v1/portal/inquiries', [InquiryController::class, 'store']);
+Route::get('/v1/landing-settings', [LandingPageController::class, 'getSettings']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -40,4 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Inquiries CRUD
     Route::apiResource('/v1/inquiries', InquiryController::class);
+
+    // Landing Page CMS
+    Route::put('/v1/landing-settings', [LandingPageController::class, 'updateSettings']);
 });

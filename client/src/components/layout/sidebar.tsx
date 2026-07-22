@@ -1,13 +1,10 @@
 import { useState } from "react"
-import { NavLink, useNavigate } from "react-router-dom"
+import { NavLink } from "react-router-dom"
 import * as Icons from "lucide-react";
 import { cn } from "../../lib/utils"
 import { PATHS } from "../../routes/paths"
 import Logo from "../../assets/logo.jpg"
-import { notify } from "../../util/notify"
-import { AuthService } from "../../services/Authservices"
 
-import { Spinner } from "../../components/ui/spinner";
 
 interface SidebarProps {
   isCollapsed: boolean
@@ -39,6 +36,11 @@ export const routes = [
     label: "Data Management",
     path: PATHS.APP.MANAGE_DATA_MANAGEMENT,
     icon: Icons.Database,
+  },
+  {
+    label: "Landing Page CMS",
+    path: PATHS.APP.MANAGE_LANDING_PAGE,
+    icon: Icons.Settings,
   },
   {
     label: "Users",

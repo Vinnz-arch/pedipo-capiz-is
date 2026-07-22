@@ -20,6 +20,7 @@ return new class extends Migration
             $table->text('key_incentives')->nullable();
             $table->text('description')->nullable();
             $table->text('incentive_package')->nullable();
+            $table->string('location')->nullable();
             $table->string('image_path')->nullable();
             $table->string('status')->default('Draft');
             $table->timestamps();

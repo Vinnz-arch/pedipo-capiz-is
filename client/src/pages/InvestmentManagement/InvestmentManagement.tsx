@@ -78,6 +78,7 @@ export const InvestmentManagement: React.FC = () => {
   const [roiEstimate, setRoiEstimate] = useState("");
   const [landArea, setLandArea] = useState("");
   const [statusOption, setStatusOption] = useState<Project["status"]>("Draft");
+  const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [keyIncentives, setKeyIncentives] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -95,7 +96,7 @@ export const InvestmentManagement: React.FC = () => {
   const mapApiToProject = (item: OpportunityData): Project => ({
     id: String(item.id),
     name: item.project_name,
-    location: "Roxas City, Capiz",
+    location: item.location || "Roxas City, Capiz",
     category: item.category?.name || "General",
     categoryId: item.category_id,
     roi: item.roi_estimate ? `${item.roi_estimate}%` : "0%",
@@ -156,6 +157,7 @@ export const InvestmentManagement: React.FC = () => {
     setRoiEstimate("");
     setLandArea("");
     setStatusOption("Draft");
+    setLocation("");
     setDescription("");
     setKeyIncentives("");
     setSelectedFile(null);
@@ -176,6 +178,7 @@ export const InvestmentManagement: React.FC = () => {
     setRoiEstimate(project.roi.replace("%", ""));
     setLandArea(project.landArea.replace(" Ha", ""));
     setStatusOption(project.status);
+    setLocation(project.location);
     setKeyIncentives(project.incentives.join(", "));
     setDescription(project.description);
     setImagePreview(project.image);
@@ -216,6 +219,7 @@ export const InvestmentManagement: React.FC = () => {
     if (roiEstimate) formData.append("roi_estimate", roiEstimate.replace("%", ""));
     if (landArea) formData.append("land_area", landArea.replace("Ha", "").trim());
     formData.append("status", statusOption);
+    formData.append("location", location.trim());
     if (keyIncentives) formData.append("key_incentives", keyIncentives.trim());
     if (description) formData.append("description", description.trim());
 
@@ -678,18 +682,31 @@ export const InvestmentManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Status Selection */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Status</label>
-                    <select
-                      value={statusOption}
-                      onChange={(e) => setStatusOption(e.target.value as Project["status"])}
-                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
-                    >
-                      <option value="Draft">Draft</option>
-                      <option value="Published">Published</option>
-                      <option value="Closed">Closed</option>
-                    </select>
+                  {/* Status Selection & Location */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Status</label>
+                      <select
+                        value={statusOption}
+                        onChange={(e) => setStatusOption(e.target.value as Project["status"])}
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                      >
+                        <option value="Draft">Draft</option>
+                        <option value="Published">Published</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Location / Municipality</label>
+                      <input
+                        type="text"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="e.g. Roxas City, Capiz"
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                      />
+                    </div>
                   </div>
 
                   {/* Key Incentives */}

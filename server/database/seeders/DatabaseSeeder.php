@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             OpportunitySeeder::class,
             InquirySeeder::class,
+            LandingPageSettingSeeder::class,
         ]);
     }
 }

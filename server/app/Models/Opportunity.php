@@ -20,6 +20,7 @@ class Opportunity extends Model
         'incentive_package',
         'image_path',
         'status',
+        'location',
     ];
 
     protected $casts = [
