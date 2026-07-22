@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('hero_title');
             $table->string('hero_subtitle');
             $table->text('hero_description');
+            $table->string('hero_image_path')->nullable();
             
             // Vision & Mission
             $table->text('vision_text');
@@ -29,9 +30,11 @@ return new class extends Migration
             // MSME
             $table->string('msme_title');
             $table->text('msme_description');
+            $table->string('msme_image_path')->nullable();
             
             // Mandate & Pledge
             $table->text('mandate_text');
+            $table->string('mandate_image_path')->nullable();
             $table->text('service_pledge_1');
             $table->text('service_pledge_2');
             $table->text('service_pledge_3');

@@ -38,13 +38,19 @@ class LandingPageController extends Controller
             'hero_title' => 'required|string|max:255',
             'hero_subtitle' => 'required|string|max:1000',
             'hero_description' => 'required|string',
+            'hero_image_path' => 'nullable|string|max:1000',
+            'hero_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
             'vision_text' => 'required|string',
             'mission_point_1' => 'required|string',
             'mission_point_2' => 'required|string',
             'mission_point_3' => 'required|string',
             'msme_title' => 'required|string|max:255',
             'msme_description' => 'required|string',
+            'msme_image_path' => 'nullable|string|max:1000',
+            'msme_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
             'mandate_text' => 'required|string',
+            'mandate_image_path' => 'nullable|string|max:1000',
+            'mandate_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
             'service_pledge_1' => 'required|string',
             'service_pledge_2' => 'required|string',
             'service_pledge_3' => 'required|string',
@@ -72,6 +78,52 @@ class LandingPageController extends Controller
         }
 
         $settings->fill($validated);
+
+        if ($request->hasFile('hero_image')) {
+            // Delete old local file if exists
+            if ($settings->hero_image_path && !str_starts_with($settings->hero_image_path, 'http')) {
+                $oldPath = public_path($settings->hero_image_path);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            $file = $request->file('hero_image');
+            $fileName = 'hero_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('storage/landing'), $fileName);
+            $settings->hero_image_path = '/storage/landing/' . $fileName;
+        }
+
+        if ($request->hasFile('msme_image')) {
+            // Delete old local file if exists
+            if ($settings->msme_image_path && !str_starts_with($settings->msme_image_path, 'http')) {
+                $oldPath = public_path($settings->msme_image_path);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            $file = $request->file('msme_image');
+            $fileName = 'msme_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('storage/landing'), $fileName);
+            $settings->msme_image_path = '/storage/landing/' . $fileName;
+        }
+
+        if ($request->hasFile('mandate_image')) {
+            // Delete old local file if exists
+            if ($settings->mandate_image_path && !str_starts_with($settings->mandate_image_path, 'http')) {
+                $oldPath = public_path($settings->mandate_image_path);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            $file = $request->file('mandate_image');
+            $fileName = 'mandate_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('storage/landing'), $fileName);
+            $settings->mandate_image_path = '/storage/landing/' . $fileName;
+        }
+
         $settings->save();
 
         return response()->json([

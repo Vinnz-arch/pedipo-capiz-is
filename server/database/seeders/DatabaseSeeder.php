@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             OpportunitySeeder::class,
             InquirySeeder::class,
             LandingPageSettingSeeder::class,
+            NewsArticleSeeder::class,
         ]);
     }
 }

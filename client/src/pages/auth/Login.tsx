@@ -20,7 +20,7 @@ const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!recaptchaToken) { // (!recaptchaToken && import.meta.env.MODE !== 'development') add this code after !recaptchaToken
+    if (!recaptchaToken ) { // (!recaptchaToken && import.meta.env.MODE !== 'development') add this code after !recaptchaToken
       notify.warning("Verification Required", "Please complete the CAPTCHA to continue.");
       return;
     }
@@ -31,7 +31,7 @@ const Login: React.FC = () => {
       const data = await AuthService.login({
         email,
         password,
-        recaptcha_token: recaptchaToken // use that code if want to use without captcha
+        recaptcha_token: recaptchaToken // || "debug" // use that code if want to use without captcha
       });
 
       notify.success("Welcome Back!", `Successfully signed in as ${data.user.name}`);

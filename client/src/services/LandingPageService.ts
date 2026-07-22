@@ -23,6 +23,9 @@ export interface LandingPageSettingData {
   contact_facebook?: string;
   contact_twitter?: string;
   contact_linkedin?: string;
+  hero_image_path?: string;
+  msme_image_path?: string;
+  mandate_image_path?: string;
   division_1_title: string;
   division_1_subtitle: string;
   division_1_bullets: string;
@@ -45,8 +48,8 @@ export const LandingPageService = {
   /**
    * Update landing page settings (Admin only).
    */
-  updateSettings: async (data: LandingPageSettingData) => {
-    return await ApiHandler.put<{ message: string; settings: LandingPageSettingData }>(
+  updateSettings: async (data: LandingPageSettingData | FormData) => {
+    return await ApiHandler.post<{ message: string; settings: LandingPageSettingData }>(
       "/v1/landing-settings",
       data,
       "Landing page settings updated successfully!"

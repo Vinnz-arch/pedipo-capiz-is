@@ -8,17 +8,22 @@ import {
   ChevronRight, 
   Check, 
   Target, 
-  Award
+  Award,
+  Menu,
+  X
 } from "lucide-react";
 import { LandingPageService, type LandingPageSettingData } from "@/services/LandingPageService";
 import { OpportunityService, type OpportunityData } from "@/services/OpportunityService";
+import { NewsService, type NewsArticleData } from "@/services/NewsService";
 import logo from "../assets/logo.jpg";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<LandingPageSettingData | null>(null);
   const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
+  const [news, setNews] = useState<NewsArticleData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchLandingData = async () => {
@@ -32,6 +37,11 @@ export const LandingPage: React.FC = () => {
         if (oppsRes.opportunities) {
           // Only show published opportunities on public page
           setOpportunities(oppsRes.opportunities.filter(o => o.status === "Published").slice(0, 3));
+        }
+
+        const newsRes = await NewsService.getAll();
+        if (newsRes.articles) {
+          setNews(newsRes.articles.slice(0, 3));
         }
       } catch (error) {
         console.error("Failed to load landing page data:", error);
@@ -57,6 +67,14 @@ export const LandingPage: React.FC = () => {
     window.open("https://capiz.gov.ph", "_blank");
   };
 
+  const resolveCmsImageUrl = (path?: string, fallback: string = "") => {
+    if (!path) return fallback;
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
+  };
+
   const parseBullets = (bulletsText?: string): string[] => {
     if (!bulletsText) return [];
     return bulletsText.split("\n").map(line => line.trim()).filter(Boolean);
@@ -78,17 +96,17 @@ export const LandingPage: React.FC = () => {
       {/* 1. Header Navigation Bar */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            <img src={logo} alt="PEDIPO Logo" className="w-10 h-10 object-cover rounded-lg border border-slate-200" />
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+            <img src={logo} alt="PEDIPO Logo" className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
             <div className="text-left">
-              <h1 className="text-base font-extrabold text-[#002B66] leading-none uppercase tracking-wide">PEDIPO</h1>
-              <span className="text-[8px] font-bold text-slate-400 block tracking-wider mt-0.5 uppercase">
+              <h1 className="text-sm sm:text-base font-extrabold text-[#002B66] leading-none uppercase tracking-wide">PEDIPO</h1>
+              <span className="text-[7.5px] font-bold text-slate-400 block tracking-wider mt-0.5 uppercase max-w-[200px] sm:max-w-[240px] leading-tight">
                 Provincial Economic Development & Investment Promotion Office
               </span>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-7">
             <a 
               href="#opportunities" 
               onClick={(e) => handleScrollTo("opportunities", e)}
@@ -111,6 +129,13 @@ export const LandingPage: React.FC = () => {
               MSME Support
             </a>
             <a 
+              href="#news" 
+              onClick={(e) => handleScrollTo("news", e)}
+              className="text-xs font-bold text-slate-600 hover:text-[#002B66] uppercase tracking-wider transition-colors"
+            >
+              News
+            </a>
+            <a 
               href="#mandate" 
               onClick={(e) => handleScrollTo("mandate", e)}
               className="text-xs font-bold text-slate-600 hover:text-[#002B66] uppercase tracking-wider transition-colors"
@@ -119,22 +144,84 @@ export const LandingPage: React.FC = () => {
             </a>
           </nav>
 
-          <div>
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/portal/investorPortal")}
-              className="px-5 py-2.5 bg-[#002B66] text-white hover:bg-[#001D47] text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition-all duration-300 tracking-wider uppercase cursor-pointer"
+              className="hidden sm:inline-flex px-4 py-2.5 bg-[#002B66] text-white hover:bg-[#001D47] text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition-all duration-300 tracking-wider uppercase cursor-pointer"
             >
               Investor Portal
             </button>
+
+            {/* Hamburger Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 text-slate-600 hover:text-[#002B66] hover:bg-slate-50 rounded-xl border border-slate-200/60 transition-all cursor-pointer"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu Panel */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-100 bg-white px-4 py-4 space-y-3 shadow-md animate-in slide-in-from-top-4 duration-200">
+            <nav className="flex flex-col gap-3 text-left">
+              <a 
+                href="#opportunities" 
+                onClick={(e) => { handleScrollTo("opportunities", e); setIsMobileMenuOpen(false); }}
+                className="text-xs font-bold text-slate-600 hover:text-[#002B66] uppercase tracking-wider block py-1"
+              >
+                Opportunities
+              </a>
+              <a 
+                href="#divisions" 
+                onClick={(e) => { handleScrollTo("divisions", e); setIsMobileMenuOpen(false); }}
+                className="text-xs font-bold text-slate-600 hover:text-[#002B66] uppercase tracking-wider block py-1"
+              >
+                Divisions & Services
+              </a>
+              <a 
+                href="#msme" 
+                onClick={(e) => { handleScrollTo("msme", e); setIsMobileMenuOpen(false); }}
+                className="text-xs font-bold text-slate-600 hover:text-[#002B66] uppercase tracking-wider block py-1"
+              >
+                MSME Support
+              </a>
+              <a 
+                href="#news" 
+                onClick={(e) => { handleScrollTo("news", e); setIsMobileMenuOpen(false); }}
+                className="text-xs font-bold text-slate-600 hover:text-[#002B66] uppercase tracking-wider block py-1"
+              >
+                News
+              </a>
+              <a 
+                href="#mandate" 
+                onClick={(e) => { handleScrollTo("mandate", e); setIsMobileMenuOpen(false); }}
+                className="text-xs font-bold text-slate-600 hover:text-[#002B66] uppercase tracking-wider block py-1"
+              >
+                About Us
+              </a>
+              <button
+                onClick={() => { navigate("/portal/investorPortal"); setIsMobileMenuOpen(false); }}
+                className="w-full text-center py-2.5 bg-[#002B66] text-white hover:bg-[#001D47] text-xs font-bold rounded-xl uppercase tracking-wider cursor-pointer mt-1"
+              >
+                Investor Portal
+              </button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* 2. Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 text-white py-24 sm:py-32">
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80" 
+            src={resolveCmsImageUrl(settings.hero_image_path, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80")} 
             alt="Capiz Coastline" 
             className="w-full h-full object-cover opacity-35"
           />
@@ -375,13 +462,82 @@ export const LandingPage: React.FC = () => {
             {/* Right Photo */}
             <div className="relative min-h-[300px] lg:min-h-full">
               <img 
-                src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80" 
+                src={resolveCmsImageUrl(settings.msme_image_path, "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80")} 
                 alt="MSME Local Marketplace" 
                 className="absolute inset-0 w-full h-full object-cover opacity-80"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent lg:bg-gradient-to-r lg:from-slate-950 lg:via-transparent lg:to-transparent" />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* News & Updates Section */}
+      <section id="news" className="py-24 bg-white border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 text-left border-b border-slate-100 pb-6">
+            <div className="space-y-2">
+              <span className="text-[10px] font-extrabold text-[#A28815] tracking-widest uppercase block">
+                NEWS & ANNOUNCEMENTS
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase">
+                Latest News & Updates
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                Keep up with important events, business milestones, and news from our economic development team.
+              </p>
+            </div>
+            <button 
+              onClick={() => navigate("/news")}
+              className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-[#002B66] text-slate-700 hover:text-white text-xs font-bold rounded-xl transition-all duration-300 tracking-wider uppercase cursor-pointer"
+            >
+              Browse All News
+            </button>
+          </div>
+
+          {news.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-slate-50 border border-slate-200/50 rounded-2xl">
+              No news articles published yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {news.map((item) => (
+                <div 
+                  key={item.id} 
+                  className="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-pointer text-left"
+                  onClick={() => navigate(`/news/${item.slug}`)}
+                >
+                  <div>
+                    <div className="relative h-48 bg-slate-100 overflow-hidden">
+                      <img 
+                        src={resolveCmsImageUrl(item.image_path, "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80")} 
+                        alt={item.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    <div className="p-6 space-y-3">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                        <span>{item.published_at ? new Date(item.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                        <span>•</span>
+                        <span>{item.author || "PEDIPO"}</span>
+                      </div>
+                      <h4 className="text-sm font-extrabold text-slate-950 leading-snug group-hover:text-[#002B66] transition-colors line-clamp-2">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed font-medium line-clamp-3">
+                        {item.summary}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="px-6 pb-6 pt-2">
+                    <span className="text-[11px] font-bold text-[#002B66] group-hover:underline flex items-center gap-1">
+                      Read Full Story <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -392,7 +548,7 @@ export const LandingPage: React.FC = () => {
             {/* Left Capitol Image */}
             <div className="lg:col-span-5 relative rounded-2xl overflow-hidden shadow-lg border border-slate-200 max-h-[360px]">
               <img 
-                src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80" 
+                src={resolveCmsImageUrl(settings.mandate_image_path, "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80")} 
                 alt="Capiz Provincial Capitol" 
                 className="w-full h-full object-cover"
               />
@@ -492,6 +648,7 @@ export const LandingPage: React.FC = () => {
               <li><a href="https://capiz.gov.ph" target="_blank" rel="noreferrer" className="hover:underline hover:text-white transition-colors">Capiz Gov Portal</a></li>
               <li><a href="#opportunities" onClick={(e) => handleScrollTo("opportunities", e)} className="hover:underline hover:text-white transition-colors">Investment Opportunities</a></li>
               <li><a href="#divisions" onClick={(e) => handleScrollTo("divisions", e)} className="hover:underline hover:text-white transition-colors">Divisions & Services</a></li>
+              <li><a href="/news" className="hover:underline hover:text-white transition-colors">Latest News & Updates</a></li>
               <li><a href="#mandate" onClick={(e) => handleScrollTo("mandate", e)} className="hover:underline hover:text-white transition-colors">Mandate & Pledges</a></li>
             </ul>
           </div>

@@ -7,6 +7,7 @@ use App\Http\Controllers\API\v1\UserLogController;
 use App\Http\Controllers\API\v1\OpportunityController;
 use App\Http\Controllers\API\v1\InquiryController;
 use App\Http\Controllers\API\v1\LandingPageController;
+use App\Http\Controllers\API\v1\NewsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,11 @@ Route::get('/v1/opportunities', [OpportunityController::class, 'index']);
 Route::get('/v1/portal/opportunities', [OpportunityController::class, 'publicOpportunities']);
 Route::post('/v1/portal/inquiries', [InquiryController::class, 'store']);
 Route::get('/v1/landing-settings', [LandingPageController::class, 'getSettings']);
+
+// Public News Read
+Route::get('/v1/news', [NewsController::class, 'index']);
+Route::get('/v1/news/{slugOrId}', [NewsController::class, 'show']);
+Route::post('/v1/news/{id}/comments', [NewsController::class, 'storeComment']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -45,4 +51,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Landing Page CMS
     Route::put('/v1/landing-settings', [LandingPageController::class, 'updateSettings']);
+    Route::post('/v1/landing-settings', [LandingPageController::class, 'updateSettings']);
+
+    // News CRUD (Admin only)
+    Route::post('/v1/news', [NewsController::class, 'store']);
+    Route::put('/v1/news/{id}', [NewsController::class, 'update']);
+    Route::post('/v1/news/{id}', [NewsController::class, 'update']); // for multipart form-data
+    Route::delete('/v1/news/{id}', [NewsController::class, 'destroy']);
 });
