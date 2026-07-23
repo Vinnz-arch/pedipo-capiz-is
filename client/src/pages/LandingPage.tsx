@@ -234,7 +234,18 @@ export const LandingPage: React.FC = () => {
               {settings.hero_badge}
             </span>
             <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight">
-              Invest in <span className="text-[#A28815]">Capiz</span>
+              {settings.hero_title.includes("Capiz") ? (
+                <>
+                  {settings.hero_title.split("Capiz").map((part, index, array) => (
+                    <React.Fragment key={index}>
+                      {part}
+                      {index < array.length - 1 && <span className="text-[#A28815]">Capiz</span>}
+                    </React.Fragment>
+                  ))}
+                </>
+              ) : (
+                settings.hero_title
+              )}
             </h2>
             <p className="text-base sm:text-lg text-slate-200 font-light leading-relaxed">
               {settings.hero_subtitle}

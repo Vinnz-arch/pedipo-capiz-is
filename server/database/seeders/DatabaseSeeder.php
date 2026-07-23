@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             InquirySeeder::class,
             LandingPageSettingSeeder::class,
             NewsArticleSeeder::class,
+            MunicipalitySeeder::class,
         ]);
     }
 }

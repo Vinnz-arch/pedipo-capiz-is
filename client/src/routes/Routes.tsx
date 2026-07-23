@@ -6,6 +6,7 @@ import GuestGuard from "../components/auth/GuestGuard";
 import React, { Suspense } from "react";
 import DataManagement from "@/pages/DataManagement/DataManagement";
 import LoadingScreen from "@/components/common/LoadingScreen";
+import LandingPage from "../pages/LandingPage";
 
 // Configurable minimum loading delay in milliseconds (e.g. 1000 = 1 second)
 export const LOADING_DELAY_MS = 3000;
@@ -30,7 +31,6 @@ const Municipalities = lazyWithDelay(() => import("../pages/Municipalities/Munic
 const InvestmentManagement = lazyWithDelay(() => import("../pages/InvestmentManagement/InvestmentManagement"))
 const InvestorPortal = lazyWithDelay(() => import("../pages/user/InvestorPortal"))
 const ManageInquiries = lazyWithDelay(() => import("../pages/ManageInquires/ManageInquires"))
-const LandingPage = lazyWithDelay(() => import("../pages/LandingPage"))
 const ManageLandingPage = lazyWithDelay(() => import("../pages/ManageLandingPage/ManageLandingPage"))
 const NewsList = lazyWithDelay(() => import("../pages/NewsList"))
 const NewsDetail = lazyWithDelay(() => import("../pages/NewsDetail"))
@@ -60,7 +60,7 @@ export const Routes = createBrowserRouter([
   {
     path: PATHS.HOME,
     element: (
-      withSuspense(LandingPage)
+      <LandingPage />
     ),
   },
   {

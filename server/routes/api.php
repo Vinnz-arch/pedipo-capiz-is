@@ -8,6 +8,7 @@ use App\Http\Controllers\API\v1\OpportunityController;
 use App\Http\Controllers\API\v1\InquiryController;
 use App\Http\Controllers\API\v1\LandingPageController;
 use App\Http\Controllers\API\v1\NewsController;
+use App\Http\Controllers\API\v1\MunicipalityController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,9 @@ Route::get('/v1/landing-settings', [LandingPageController::class, 'getSettings']
 Route::get('/v1/news', [NewsController::class, 'index']);
 Route::get('/v1/news/{slugOrId}', [NewsController::class, 'show']);
 Route::post('/v1/news/{id}/comments', [NewsController::class, 'storeComment']);
+
+// Public Municipalities Read
+Route::get('/v1/municipalities', [MunicipalityController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -58,4 +62,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/v1/news/{id}', [NewsController::class, 'update']);
     Route::post('/v1/news/{id}', [NewsController::class, 'update']); // for multipart form-data
     Route::delete('/v1/news/{id}', [NewsController::class, 'destroy']);
+
+    // Municipalities CRUD
+    Route::post('/v1/municipalities', [MunicipalityController::class, 'store']);
+    Route::post('/v1/municipalities/{municipality}', [MunicipalityController::class, 'update']);
+    Route::delete('/v1/municipalities/{municipality}', [MunicipalityController::class, 'destroy']);
 });

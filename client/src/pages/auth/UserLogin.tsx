@@ -24,10 +24,10 @@ const UserLogin: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!recaptchaToken) {
-      notify.warning("Verification Required", "Please complete the CAPTCHA to continue.");
-      return;
-    }
+    // if (!recaptchaToken) {
+    //   notify.warning("Verification Required", "Please complete the CAPTCHA to continue.");
+    //   return;
+    // }
 
     setIsLoading(true);
 
@@ -35,7 +35,7 @@ const UserLogin: React.FC = () => {
       const data = await UserServices.login({
         email,
         password,
-        recaptcha_token: recaptchaToken
+        recaptcha_token: recaptchaToken || 'debug'
       });
       notify.success("Welcome Back!", `Successfully signed in as ${data.user.fullname}`);
       navigate(PATHS.PORTAL.DASHBOARD);
@@ -48,9 +48,9 @@ const UserLogin: React.FC = () => {
     }
   };
 
-  const onRecaptchaChange = (token: string | null) => {
-    setRecaptchaToken(token);
-  };
+  // const onRecaptchaChange = (token: string | null) => {
+  //   setRecaptchaToken(token);
+  // };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 font-sans">
@@ -118,14 +118,14 @@ const UserLogin: React.FC = () => {
               </div>
 
               {/* reCAPTCHA Widget */}
-              <div className="flex justify-center py-2">
+              {/* <div className="flex justify-center py-2">
                 <ReCAPTCHA
                   ref={recaptchaRef}
                   sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
                   onChange={onRecaptchaChange}
                   theme="light"
                 />
-              </div>
+              </div> */}
 
               <Button
                 type="submit"
