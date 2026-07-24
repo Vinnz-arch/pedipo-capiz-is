@@ -48,14 +48,14 @@ class InquirySeeder extends Seeder
         Inquiry::create([
             'opportunity_id' => $resort ? $resort->id : null,
             'investor_name' => 'Marcus Chen',
-            'email' => 'marcus.chen@ecostaycapital.com',
+            'email' => 'client@pedipo.com',
             'company' => 'EcoStay Hospitality Capital',
             'contact_number' => '+65 8765 4321',
             'address' => 'Marina Bay Sands, Singapore',
             'subject' => 'Resort Development Proposal',
             'purpose' => 'Other Requests',
             'message' => 'Submitting letter of intent (LOI) for eco-friendly beach resort development along Pilar coastline.',
-            'status' => 'Responded',
+            'status' => 'Completed',
             'admin_notes' => 'Proposal reviewed and approved by Provincial Economic Council. Introductory briefing set.',
             'reviewed_at' => now()->subDay(),
         ]);

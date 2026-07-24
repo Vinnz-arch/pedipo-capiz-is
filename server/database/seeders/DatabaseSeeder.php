@@ -19,11 +19,12 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             UserSeeder::class,
             CategorySeeder::class,
+            MunicipalitySeeder::class,
             OpportunitySeeder::class,
             InquirySeeder::class,
             LandingPageSettingSeeder::class,
             NewsArticleSeeder::class,
-            MunicipalitySeeder::class,
+            MsmeAssistanceRequestSeeder::class,
         ]);
     }
 }

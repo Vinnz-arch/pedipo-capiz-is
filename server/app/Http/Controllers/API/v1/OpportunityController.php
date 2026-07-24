@@ -17,12 +17,14 @@ class OpportunityController extends Controller
      */
     public function index(): JsonResponse
     {
-        $opportunities = Opportunity::with('category')->latest()->get();
+        $opportunities = Opportunity::with(['category', 'municipality'])->latest()->get();
         $categories = Category::all();
+        $municipalities = \App\Models\Municipality::all();
 
         return response()->json([
             'opportunities' => $opportunities,
             'categories' => $categories,
+            'municipalities' => $municipalities,
         ]);
     }
 
@@ -34,6 +36,7 @@ class OpportunityController extends Controller
         $rules = [
             'project_name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
+            'municipality_id' => 'nullable|exists:municipalities,id',
             'roi_estimate' => 'nullable|numeric',
             'land_area' => 'nullable|numeric',
             'key_incentives' => 'nullable|string',
@@ -58,6 +61,7 @@ class OpportunityController extends Controller
         $opportunity = Opportunity::create([
             'project_name' => $validated['project_name'],
             'category_id' => $validated['category_id'],
+            'municipality_id' => $validated['municipality_id'] ?? null,
             'roi_estimate' => $validated['roi_estimate'] ?? null,
             'land_area' => $validated['land_area'] ?? null,
             'key_incentives' => $validated['key_incentives'] ?? null,
@@ -72,7 +76,7 @@ class OpportunityController extends Controller
 
         return response()->json([
             'message' => 'Opportunity created successfully.',
-            'opportunity' => $opportunity->load('category'),
+            'opportunity' => $opportunity->load(['category', 'municipality']),
         ], 201);
     }
 
@@ -81,7 +85,7 @@ class OpportunityController extends Controller
      */
     public function show(Opportunity $opportunity): JsonResponse
     {
-        return response()->json($opportunity->load('category'));
+        return response()->json($opportunity->load(['category', 'municipality']));
     }
 
     /**
@@ -92,6 +96,7 @@ class OpportunityController extends Controller
         $rules = [
             'project_name' => 'sometimes|required|string|max:255',
             'category_id' => 'sometimes|required|exists:categories,id',
+            'municipality_id' => 'sometimes|nullable|exists:municipalities,id',
             'roi_estimate' => 'nullable|numeric',
             'land_area' => 'nullable|numeric',
             'key_incentives' => 'nullable|string',
@@ -117,7 +122,7 @@ class OpportunityController extends Controller
 
         return response()->json([
             'message' => 'Opportunity updated successfully.',
-            'opportunity' => $opportunity->load('category'),
+            'opportunity' => $opportunity->load(['category', 'municipality']),
         ]);
     }
 
@@ -141,7 +146,7 @@ class OpportunityController extends Controller
     {
         $data = Cache::remember('public_opportunities', 3600, function () {
             return [
-                'opportunities' => Opportunity::with('category')->where('status', 'Published')->latest()->get(),
+                'opportunities' => Opportunity::with(['category', 'municipality'])->where('status', 'Published')->latest()->get(),
                 'categories' => Category::all(),
             ];
         });

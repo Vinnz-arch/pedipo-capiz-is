@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('letter_of_intent')->nullable();
             $table->string('supporting_documents')->nullable();
             $table->text('message');
-            $table->enum('status', ['Pending', 'Under Review', 'Approved', 'Rejected', 'Responded'])->default('Pending');
+            $table->string('status')->default('Submitted');
             $table->text('admin_notes')->nullable();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();

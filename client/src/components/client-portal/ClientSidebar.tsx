@@ -22,6 +22,11 @@ export const clientRoutes = [
     path: PATHS.PORTAL.INVESTOR_PORTAL,
     icon: Icons.TrendingUp,
   },
+  {
+    label: "MSME Assistance",
+    path: PATHS.PORTAL.MSME_ASSISTANCE,
+    icon: Icons.Briefcase,
+  },
 ];
 
 export default function ClientSidebar({ isCollapsed, setIsCollapsed }: ClientSidebarProps) {

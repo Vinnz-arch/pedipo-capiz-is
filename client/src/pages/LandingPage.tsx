@@ -409,7 +409,7 @@ export const LandingPage: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-1 text-[11px] text-slate-400 font-semibold mb-1">
                         <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                        <span>{opp.location || "Roxas City, Capiz"}</span>
+                        <span>{opp.municipality?.name || opp.location || "Roxas City, Capiz"}</span>
                       </div>
                       <h4 className="text-sm font-bold text-slate-900 leading-snug">{opp.project_name}</h4>
                     </div>

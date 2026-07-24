@@ -9,6 +9,7 @@ use App\Http\Controllers\API\v1\InquiryController;
 use App\Http\Controllers\API\v1\LandingPageController;
 use App\Http\Controllers\API\v1\NewsController;
 use App\Http\Controllers\API\v1\MunicipalityController;
+use App\Http\Controllers\API\v1\MsmeAssistanceRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -67,4 +68,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/v1/municipalities', [MunicipalityController::class, 'store']);
     Route::post('/v1/municipalities/{municipality}', [MunicipalityController::class, 'update']);
     Route::delete('/v1/municipalities/{municipality}', [MunicipalityController::class, 'destroy']);
+
+    // MSME Assistance Requests
+    Route::get('/v1/msme-requests', [MsmeAssistanceRequestController::class, 'index']);
+    Route::post('/v1/msme-requests', [MsmeAssistanceRequestController::class, 'store']);
+    Route::get('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'show']);
+    Route::put('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']);
+    Route::post('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']); // for multipart update if needed
+    Route::delete('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'destroy']);
 });

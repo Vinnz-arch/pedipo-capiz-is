@@ -13,6 +13,7 @@ class Opportunity extends Model
     protected $fillable = [
         'project_name',
         'category_id',
+        'municipality_id',
         'roi_estimate',
         'land_area',
         'key_incentives',
@@ -34,5 +35,13 @@ class Opportunity extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Get the municipality that owns the opportunity.
+     */
+    public function municipality(): BelongsTo
+    {
+        return $this->belongsTo(Municipality::class);
     }
 }

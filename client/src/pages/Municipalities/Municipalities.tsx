@@ -11,7 +11,15 @@ import {
   X, 
   Upload,
   Building,
-  Loader2
+  Loader2,
+  Eye,
+  Map,
+  Users,
+  Layers,
+  TrendingUp,
+  Mail,
+  Phone,
+  ExternalLink
 } from "lucide-react";
 
 const Municipalities = () => {
@@ -24,6 +32,10 @@ const Municipalities = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentMuni, setCurrentMuni] = useState<MunicipalityData | null>(null);
+
+  // Details Modal State
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [muniForDetails, setMuniForDetails] = useState<MunicipalityData | null>(null);
 
   // Form State
   const [name, setName] = useState("");
@@ -241,90 +253,57 @@ const Municipalities = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/75 border-b border-slate-200">
-                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Seal</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Name</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Class</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Population</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Land Area</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Barangays</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">GDP</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Key Sectors</th>
+                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Municipality</th>
+                    <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Details</th>
                     <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {filteredMuni.map((muni) => {
-                    const industries = muni.key_industries
-                      ? muni.key_industries.split(",").map(i => i.trim()).filter(Boolean)
-                      : [];
                     return (
                       <tr key={muni.id} className="hover:bg-slate-50/30 transition-colors">
-                        <td className="px-5 py-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200/80 p-0.5 flex items-center justify-center overflow-hidden shrink-0">
-                            {muni.seal_path && !muni.seal_path.includes("default_seal.png") ? (
-                              <img 
-                                src={muni.seal_path.startsWith("http") ? muni.seal_path : `http://localhost:8000${muni.seal_path}`} 
-                                alt={`${muni.name} Seal`}
-                                className="w-full h-full object-contain"
-                              />
-                            ) : (
-                              <span className="text-[8px] font-bold text-slate-400 block tracking-tighter">No Seal</span>
-                            )}
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200/80 p-0.5 flex items-center justify-center overflow-hidden shrink-0">
+                              {muni.seal_path && !muni.seal_path.includes("default_seal.png") ? (
+                                <img 
+                                  src={muni.seal_path.startsWith("http") ? muni.seal_path : `http://localhost:8000${muni.seal_path}`} 
+                                  alt={`${muni.name} Seal`}
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                <span className="text-[8px] font-bold text-slate-400 block tracking-tighter">No Seal</span>
+                              )}
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="font-bold text-slate-900 text-sm">{muni.name}</p>
+                              {muni.website_url && (
+                                <a 
+                                  href={muni.website_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-[9px] text-[#002B66] hover:underline font-bold inline-flex items-center gap-0.5"
+                                >
+                                  <Globe className="w-2.5 h-2.5" />
+                                  <span>Website</span>
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </td>
-                        <td className="px-5 py-2.5 font-bold text-slate-900">
-                          <div className="space-y-0.5">
-                            <p>{muni.name}</p>
-                            {muni.website_url && (
-                              <a 
-                                href={muni.website_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-[9px] text-[#002B66] hover:underline font-bold inline-flex items-center gap-0.5"
-                              >
-                                <Globe className="w-2.5 h-2.5" />
-                                <span>Website</span>
-                              </a>
-                            )}
-                          </div>
+                        <td className="px-5 py-3">
+                          <button
+                            onClick={() => {
+                              setMuniForDetails(muni);
+                              setIsDetailsOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#002B66]/5 hover:bg-[#002B66] text-[#002B66] hover:text-white text-xs font-bold rounded-lg border border-transparent hover:border-[#002B66] transition-all duration-200 cursor-pointer shadow-xs"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View Details</span>
+                          </button>
                         </td>
-                        <td className="px-5 py-2.5">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                            muni.class === "Component City"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                              : "bg-blue-50 text-blue-700 border border-blue-100"
-                          }`}>
-                            {muni.class}
-                          </span>
-                        </td>
-                        <td className="px-5 py-2.5 text-slate-500 font-semibold">
-                          {muni.population ? Number(muni.population).toLocaleString() : "0"}
-                        </td>
-                        <td className="px-5 py-2.5 text-slate-500 font-semibold whitespace-nowrap">
-                          {muni.land_area} ㎡
-                        </td>
-                        <td className="px-5 py-2.5 text-slate-500 font-semibold">
-                          {muni.barangay_count}
-                        </td>
-                        <td className="px-5 py-2.5 font-extrabold text-slate-700">
-                          ₱{Number(muni.gdp || 0).toLocaleString()}M
-                        </td>
-                        <td className="px-5 py-2.5 max-w-[180px]">
-                          <div className="flex flex-wrap gap-1">
-                            {industries.slice(0, 2).map((ind, i) => (
-                              <span 
-                                key={i} 
-                                className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[9px] font-bold border border-slate-200/30 whitespace-nowrap"
-                              >
-                                {ind}
-                              </span>
-                            ))}
-                            {industries.length > 2 && (
-                              <span className="text-[9px] text-slate-400 font-bold self-center">+{industries.length - 2}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-5 py-2.5 text-right">
+                        <td className="px-5 py-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => openEditModal(muni)}
@@ -576,6 +555,189 @@ const Municipalities = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* View Details Modal */}
+        {isDetailsOpen && muniForDetails && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-2xl shadow-xl overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] font-black text-[#002B66] uppercase tracking-wider">
+                  LGU Economic Profile
+                </span>
+                <button
+                  onClick={() => setIsDetailsOpen(false)}
+                  className="p-1.5 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-full transition-colors cursor-pointer"
+                >
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-left">
+                {/* Official Seal and LGU Info Header */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 border-b border-slate-100 pb-5">
+                  <div className="w-20 h-20 rounded-2xl bg-slate-50 border border-slate-200/85 p-1 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                    {muniForDetails.seal_path && !muniForDetails.seal_path.includes("default_seal.png") ? (
+                      <img 
+                        src={muniForDetails.seal_path.startsWith("http") ? muniForDetails.seal_path : `http://localhost:8000${muniForDetails.seal_path}`} 
+                        alt={`${muniForDetails.name} Seal`}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center p-1 leading-tighter">No Seal</span>
+                    )}
+                  </div>
+                  <div className="text-center sm:text-left space-y-1.5 w-full">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <h2 className="text-2xl font-black text-[#002B66] tracking-tight">{muniForDetails.name}</h2>
+                      <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider w-fit mx-auto sm:mx-0 ${
+                        muniForDetails.class === "Component City"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                          : "bg-blue-50 text-blue-700 border border-blue-100"
+                      }`}>
+                        {muniForDetails.class}
+                      </span>
+                    </div>
+                    {muniForDetails.website_url && (
+                      <a 
+                        href={muniForDetails.website_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-xs text-[#002B66] hover:text-[#001D47] hover:underline font-bold inline-flex items-center gap-1"
+                      >
+                        <Globe className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Visit LGU Website</span>
+                        <ExternalLink className="w-3 h-3 text-slate-400" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Key Metrics Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Population */}
+                  <div className="bg-slate-50/60 border border-slate-100 p-4 rounded-2xl flex items-center gap-3">
+                    <div className="bg-blue-50 text-blue-600 rounded-xl p-2.5 shrink-0">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Population</p>
+                      <p className="text-lg font-black text-slate-900 mt-0.5">
+                        {muniForDetails.population ? Number(muniForDetails.population).toLocaleString() : "0"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Land Area */}
+                  <div className="bg-slate-50/60 border border-slate-100 p-4 rounded-2xl flex items-center gap-3">
+                    <div className="bg-emerald-50 text-emerald-600 rounded-xl p-2.5 shrink-0">
+                      <Map className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Land Area</p>
+                      <p className="text-lg font-black text-slate-900 mt-0.5 whitespace-nowrap">
+                        {muniForDetails.land_area} ㎡
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Barangays */}
+                  <div className="bg-slate-50/60 border border-slate-100 p-4 rounded-2xl flex items-center gap-3">
+                    <div className="bg-indigo-50 text-indigo-600 rounded-xl p-2.5 shrink-0">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Number of Barangays</p>
+                      <p className="text-lg font-black text-slate-900 mt-0.5">
+                        {muniForDetails.barangay_count}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* GDP */}
+                  <div className="bg-slate-50/60 border border-slate-100 p-4 rounded-2xl flex items-center gap-3">
+                    <div className="bg-amber-50 text-[#746006] rounded-xl p-2.5 shrink-0">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">GDP (PHP)</p>
+                      <p className="text-lg font-black text-slate-900 mt-0.5">
+                        ₱{Number(muniForDetails.gdp || 0).toLocaleString()}M
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Economic Sectors */}
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5" />
+                    <span>Key Economic Sectors</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5 p-4 bg-slate-50/40 border border-slate-100 rounded-2xl">
+                    {muniForDetails.key_industries ? (
+                      muniForDetails.key_industries.split(",").map((ind, i) => (
+                        <span 
+                          key={i} 
+                          className="px-3 py-1 bg-[#746006]/5 text-[#746006] border border-[#746006]/20 rounded-lg text-xs font-bold whitespace-nowrap shadow-2xs"
+                        >
+                          {ind.trim()}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-slate-400 text-xs italic">No key sectors specified</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Economic Profile Summary */}
+                {muniForDetails.description && (
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Economic Profile Summary</h4>
+                    <div className="bg-slate-50/40 border-l-4 border-[#002B66] p-4 rounded-r-2xl rounded-l-md text-xs md:text-sm text-slate-700 leading-relaxed font-medium">
+                      {muniForDetails.description}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact Information */}
+                {(muniForDetails.contact_email || muniForDetails.contact_phone) && (
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Contact Information</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold text-slate-600">
+                      {muniForDetails.contact_email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-slate-400" />
+                          <a href={`mailto:${muniForDetails.contact_email}`} className="hover:text-[#002B66] hover:underline">
+                            {muniForDetails.contact_email}
+                          </a>
+                        </div>
+                      )}
+                      {muniForDetails.contact_phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-slate-400" />
+                          <span>{muniForDetails.contact_phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsDetailsOpen(false)}
+                  className="px-5 py-2.5 bg-[#002B66] hover:bg-[#001D47] text-white text-xs font-bold rounded-xl transition-all uppercase tracking-wider cursor-pointer shadow-md"
+                >
+                  Close Profile
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -12,9 +12,18 @@ class InquiryController extends Controller
     /**
      * Display a listing of inquiries.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $inquiries = Inquiry::with('opportunity.category')->latest()->get();
+        $user = $request->user();
+
+        if ($user instanceof \App\Models\Admin) {
+            $inquiries = Inquiry::with('opportunity.category')->latest()->get();
+        } else {
+            $inquiries = Inquiry::with('opportunity.category')
+                ->where('email', $user->email)
+                ->latest()
+                ->get();
+        }
 
         return response()->json([
             'inquiries' => $inquiries,
@@ -87,7 +96,7 @@ class InquiryController extends Controller
     public function update(Request $request, Inquiry $inquiry): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:Pending,Under Review,Approved,Rejected,Responded',
+            'status' => 'required|string|in:Submitted,Pending,Under Review,Endorsed,Assistance Identified,Processing,Completed,Approved,Rejected,Responded',
             'admin_notes' => 'nullable|string',
         ]);
 

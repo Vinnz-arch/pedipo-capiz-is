@@ -18,11 +18,16 @@ class OpportunitySeeder extends Seeder
         $tourism = Category::where('name', 'Tourism/Hospitality')->first();
         $infra = Category::where('name', 'Infrastructure')->first();
 
+        $roxas = \App\Models\Municipality::where('name', 'Roxas City')->first();
+        $pilar = \App\Models\Municipality::where('name', 'Pilar')->first();
+        $panay = \App\Models\Municipality::where('name', 'Panay')->first();
+
         if ($agri) {
             Opportunity::firstOrCreate(
                 ['project_name' => 'Seafood Processing Hub'],
                 [
                     'category_id' => $agri->id,
+                    'municipality_id' => $roxas?->id,
                     'roi_estimate' => 14.50,
                     'land_area' => 2.50,
                     'key_incentives' => 'TAX HOLIDAY (5Y), DUTY-FREE IMPORTS, LOCAL LABOR SUBSIDY',
@@ -39,6 +44,7 @@ class OpportunitySeeder extends Seeder
                 ['project_name' => 'Pueblo de Panay IT Park'],
                 [
                     'category_id' => $it->id,
+                    'municipality_id' => $roxas?->id,
                     'roi_estimate' => 12.20,
                     'land_area' => 5.00,
                     'key_incentives' => 'PEZA ACCREDITED, TAX INCENTIVES, 100% FOREIGN OWNERSHIP',
@@ -55,6 +61,7 @@ class OpportunitySeeder extends Seeder
                 ['project_name' => 'Coastal Eco-Resort'],
                 [
                     'category_id' => $tourism->id,
+                    'municipality_id' => $pilar?->id,
                     'roi_estimate' => 18.00,
                     'land_area' => 12.00,
                     'key_incentives' => 'ECO-TOURISM INCENTIVE, CAPITAL DEDUCTION, GREEN BUILD REBATE',
@@ -71,6 +78,7 @@ class OpportunitySeeder extends Seeder
                 ['project_name' => 'Panay Logistics Hub'],
                 [
                     'category_id' => $infra->id,
+                    'municipality_id' => $panay?->id,
                     'roi_estimate' => 9.50,
                     'land_area' => 8.50,
                     'key_incentives' => 'INFRASTRUCTURE GRANT, PORT ACCESS DISCOUNTS',

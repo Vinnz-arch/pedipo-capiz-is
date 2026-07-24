@@ -34,6 +34,7 @@ const ManageInquiries = lazyWithDelay(() => import("../pages/ManageInquires/Mana
 const ManageLandingPage = lazyWithDelay(() => import("../pages/ManageLandingPage/ManageLandingPage"))
 const NewsList = lazyWithDelay(() => import("../pages/NewsList"))
 const NewsDetail = lazyWithDelay(() => import("../pages/NewsDetail"))
+const MsmeAssistance = lazyWithDelay(() => import("../pages/user/MsmeAssistance"))
 
 const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType<any>>) => (
   <Suspense fallback={<LoadingScreen />}>
@@ -164,6 +165,14 @@ export const Routes = createBrowserRouter([
     element: (
       <UserAuthGuard>
         {withSuspense(InvestorPortal)}
+      </UserAuthGuard>
+    ),
+  },
+  {
+    path: PATHS.PORTAL.MSME_ASSISTANCE,
+    element: (
+      <UserAuthGuard>
+        {withSuspense(MsmeAssistance)}
       </UserAuthGuard>
     ),
   },

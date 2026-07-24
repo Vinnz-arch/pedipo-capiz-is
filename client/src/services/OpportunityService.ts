@@ -10,6 +10,12 @@ export interface OpportunityData {
   project_name: string;
   category_id: number;
   category?: CategoryData;
+  municipality_id?: number | string;
+  municipality?: {
+    id: number | string;
+    name: string;
+    class: string;
+  };
   roi_estimate?: number | string;
   land_area?: number | string;
   key_incentives?: string;
@@ -25,6 +31,7 @@ export interface OpportunityData {
 export interface OpportunityResponse {
   opportunities: OpportunityData[];
   categories: CategoryData[];
+  municipalities?: any[];
 }
 
 export const OpportunityService = {

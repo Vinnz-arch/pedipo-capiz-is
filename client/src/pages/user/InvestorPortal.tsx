@@ -15,11 +15,13 @@ import {
   FileText,
   FolderOpen,
   Upload,
-  Trash2
+  Trash2,
+  MessageSquare
 } from "lucide-react";
 import { ApiHandler } from "@/api/ApiHandler";
 import { notify } from "@/util/notify";
 import { InquiryService } from "@/services/InquiryService";
+import { InquiriesSection } from "./InquiriesSection";
 
 interface CategoryData {
   id: number;
@@ -31,6 +33,12 @@ interface OpportunityData {
   project_name: string;
   category_id: number;
   category?: CategoryData;
+  municipality_id?: number | string;
+  municipality?: {
+    id: number | string;
+    name: string;
+    class: string;
+  };
   roi_estimate?: number | string;
   land_area?: number | string;
   key_incentives?: string;
@@ -47,6 +55,7 @@ export const InvestorPortal: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"opportunities" | "inquiries">("opportunities");
 
   // Inquiry Modal State & Wizard
   const [inquiryModalProject, setInquiryModalProject] = useState<OpportunityData | null>(null);
@@ -224,8 +233,47 @@ export const InvestorPortal: React.FC = () => {
 
   return (
     <ClientMainLayout>
-      <div className="space-y-8 pb-12 font-sans">
-        {/* Filter & Search Bar */}
+      <div className="space-y-8 pb-12 font-sans text-left">
+        {/* Title Header */}
+        <div className="border-b border-slate-100 pb-4">
+          <h1 className="text-2xl font-black text-[#002B66] tracking-tight flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-[#002B66]" />
+            <span>Capiz Opportunities & Inquiries</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Browse high-yield investment programs, verify local economic profiles, and track submitted letters of intent.
+          </p>
+        </div>
+
+        {/* Tab Picker */}
+        <div className="flex border-b border-slate-200">
+          <button
+            onClick={() => setActiveTab("opportunities")}
+            className={`py-3 px-6 text-sm font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === "opportunities"
+                ? "border-[#002B66] text-[#002B66]"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Browse Opportunities</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("inquiries")}
+            className={`py-3 px-6 text-sm font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === "inquiries"
+                ? "border-[#002B66] text-[#002B66]"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>My Inquiries</span>
+          </button>
+        </div>
+
+        {activeTab === "opportunities" ? (
+          <>
+            {/* Filter & Search Bar */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
           {/* Category Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
@@ -320,7 +368,7 @@ export const InvestorPortal: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mb-1">
                           <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                          <span>{opp.location || "Roxas City, Capiz"}</span>
+                          <span>{opp.municipality?.name || opp.location || "Roxas City, Capiz"}</span>
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                           {opp.project_name}
@@ -387,6 +435,10 @@ export const InvestorPortal: React.FC = () => {
             })}
           </div>
         )}
+      </>
+    ) : (
+      <InquiriesSection />
+    )}
 
         {/* Investment Inquiry Wizard Modal */}
         {inquiryModalProject && (

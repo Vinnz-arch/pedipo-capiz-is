@@ -25,6 +25,8 @@ interface Project {
   location: string;
   category: string;
   categoryId: number;
+  municipalityId?: number | string;
+  municipalityName?: string;
   roi: string;
   status: "Published" | "Draft" | "Closed";
   landArea: string;
@@ -36,6 +38,7 @@ interface Project {
 export const InvestmentManagement: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [municipalities, setMunicipalities] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -79,6 +82,7 @@ export const InvestmentManagement: React.FC = () => {
   const [landArea, setLandArea] = useState("");
   const [statusOption, setStatusOption] = useState<Project["status"]>("Draft");
   const [location, setLocation] = useState("");
+  const [municipalityId, setMunicipalityId] = useState<number | string>("");
   const [description, setDescription] = useState("");
   const [keyIncentives, setKeyIncentives] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -99,6 +103,8 @@ export const InvestmentManagement: React.FC = () => {
     location: item.location || "Roxas City, Capiz",
     category: item.category?.name || "General",
     categoryId: item.category_id,
+    municipalityId: item.municipality_id || "",
+    municipalityName: item.municipality?.name || "",
     roi: item.roi_estimate ? `${item.roi_estimate}%` : "0%",
     status: item.status || "Draft",
     landArea: item.land_area ? `${item.land_area} Ha` : "0 Ha",
@@ -116,6 +122,12 @@ export const InvestmentManagement: React.FC = () => {
       if (data.categories && data.categories.length > 0) {
         setCategories(data.categories);
         setCategoryId(data.categories[0].id);
+      }
+      if (data.municipalities) {
+        setMunicipalities(data.municipalities);
+        if (data.municipalities.length > 0) {
+          setMunicipalityId(data.municipalities[0].id);
+        }
       }
       if (data.opportunities) {
         const mapped = data.opportunities.map(mapApiToProject);
@@ -158,6 +170,7 @@ export const InvestmentManagement: React.FC = () => {
     setLandArea("");
     setStatusOption("Draft");
     setLocation("");
+    setMunicipalityId(municipalities[0]?.id || "");
     setDescription("");
     setKeyIncentives("");
     setSelectedFile(null);
@@ -179,6 +192,7 @@ export const InvestmentManagement: React.FC = () => {
     setLandArea(project.landArea.replace(" Ha", ""));
     setStatusOption(project.status);
     setLocation(project.location);
+    setMunicipalityId(project.municipalityId || "");
     setKeyIncentives(project.incentives.join(", "));
     setDescription(project.description);
     setImagePreview(project.image);
@@ -220,6 +234,7 @@ export const InvestmentManagement: React.FC = () => {
     if (landArea) formData.append("land_area", landArea.replace("Ha", "").trim());
     formData.append("status", statusOption);
     formData.append("location", location.trim());
+    if (municipalityId) formData.append("municipality_id", String(municipalityId));
     if (keyIncentives) formData.append("key_incentives", keyIncentives.trim());
     if (description) formData.append("description", description.trim());
 
@@ -698,15 +713,31 @@ export const InvestmentManagement: React.FC = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Location / Municipality</label>
-                      <input
-                        type="text"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="e.g. Roxas City, Capiz"
+                      <label className="text-xs font-bold text-slate-700">Municipality</label>
+                      <select
+                        value={municipalityId}
+                        onChange={(e) => setMunicipalityId(e.target.value)}
                         className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
-                      />
+                      >
+                        <option value="">Select Municipality</option>
+                        {municipalities.map((muni) => (
+                          <option key={muni.id} value={muni.id}>
+                            {muni.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Specific Location (Site Details / Optional)</label>
+                    <input
+                      type="text"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="e.g. Pueblo de Panay, Roxas City"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                    />
                   </div>
 
                   {/* Key Incentives */}

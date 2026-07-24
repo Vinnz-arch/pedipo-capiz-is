@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('project_name');
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
+            $table->foreignId('municipality_id')->nullable()->constrained('municipalities')->onDelete('cascade');
             $table->decimal('roi_estimate', 8, 2)->nullable();
             $table->decimal('land_area', 8, 2)->nullable();
             $table->text('key_incentives')->nullable();
