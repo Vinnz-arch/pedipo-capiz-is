@@ -1,9 +1,7 @@
 
 import { 
   User, 
-  LayoutDashboard, 
-  FileText, 
-  ChevronRight
+  LayoutDashboard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,13 +12,6 @@ import { notify } from "../util/notify";
 
 const UserDashboard = () => {
   const clientUser = JSON.parse(localStorage.getItem("client_user") || "{}");
-
-  const handleDownloadReport = () => {
-    notify.info("Preparing Report", "Your monthly economic summary is being generated.");
-    setTimeout(() => {
-      notify.success("Download Ready", "The report has been prepared for your review.");
-    }, 2000);
-  };
 
   return (
     <ClientMainLayout>
@@ -110,22 +101,6 @@ const UserDashboard = () => {
                   <p className="text-lg font-semibold text-foreground mt-1">Just now</p>
                 </div>
               </div>
-            </div>
-            
-            <div className="mt-10 p-4 bg-accent rounded-xl border border-primary/10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                  <FileText size={20} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">View Latest Report</p>
-                  <p className="text-xs text-muted-foreground">Download your monthly economic summary</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="bg-card" onClick={handleDownloadReport}>
-                Download PDF
-                <ChevronRight size={14} className="ml-1" />
-              </Button>
             </div>
           </CardContent>
         </Card>
