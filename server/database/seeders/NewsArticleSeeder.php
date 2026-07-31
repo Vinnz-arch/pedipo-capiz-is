@@ -15,7 +15,7 @@ class NewsArticleSeeder extends Seeder
     {
         // Article 1: Filamerian IT students
         $title1 = 'Filamerian IT students join World Youth Skills Camp';
-        NewsArticle::firstOrCreate(
+        NewsArticle::updateOrCreate(
             ['title' => $title1],
             [
                 'slug' => Str::slug($title1),
@@ -25,27 +25,31 @@ class NewsArticleSeeder extends Seeder
                 'author' => 'FCU Media & PEDIPO Team',
                 'status' => 'Published',
                 'published_at' => now(),
+                'source_name' => 'Filamer Christian University Press',
+                'source_url' => 'https://filamer.edu.ph',
             ]
         );
 
         // Article 2: Capiz Economic Forum
         $title2 = 'Capiz Economic Forum Highlights Sustainable Investments';
-        NewsArticle::firstOrCreate(
+        NewsArticle::updateOrCreate(
             ['title' => $title2],
             [
                 'slug' => Str::slug($title2),
                 'summary' => 'The annual Capiz Economic Forum brought together government officials, investors, and local businesses to discuss sustainable business practices and green energy incentives.',
                 'content' => "This year's Capiz Economic Forum gathered key industry leaders, local government executives, and foreign investors at the Capiz Government and Business Center. The focus centered around introducing new local tax incentives for eco-friendly operations, recycling initiatives, and green technology adoption.\n\n\"Capiz is positioning itself as a hub for sustainable growth in Western Visayas,\" said a PEDIPO representative. \"We want to make sure that our development partners not only profit but also preserve our rich natural resources.\"",
-                'image_path' => 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80',
+                'image_path' => 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
                 'author' => 'PEDIPO Communications',
                 'status' => 'Published',
                 'published_at' => now()->subDays(2),
+                'source_name' => 'PEDIPO Capiz Official',
+                'source_url' => 'https://capiz.gov.ph',
             ]
         );
 
         // Article 3: Roxas City Seafood Processing
         $title3 = 'Roxas City Seafood Exporters Eye European Markets';
-        NewsArticle::firstOrCreate(
+        NewsArticle::updateOrCreate(
             ['title' => $title3],
             [
                 'slug' => Str::slug($title3),
@@ -55,6 +59,8 @@ class NewsArticleSeeder extends Seeder
                 'author' => 'Industry News Desk',
                 'status' => 'Published',
                 'published_at' => now()->subDays(5),
+                'source_name' => 'DTI Region VI News',
+                'source_url' => 'https://www.dti.gov.ph',
             ]
         );
     }

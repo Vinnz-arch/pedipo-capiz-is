@@ -22,6 +22,8 @@ class Opportunity extends Model
         'image_path',
         'status',
         'location',
+        'source_name',
+        'source_url',
     ];
 
     protected $casts = [

@@ -24,6 +24,8 @@ export interface OpportunityData {
   image_path?: string;
   status: "Draft" | "Published" | "Closed";
   location?: string;
+  source_name?: string;
+  source_url?: string;
   created_at?: string;
   updated_at?: string;
 }

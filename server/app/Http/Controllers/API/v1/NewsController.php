@@ -64,6 +64,8 @@ class NewsController extends Controller
             'status' => 'nullable|string|in:Published,Draft',
             'published_at' => 'nullable|date',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
+            'source_name' => 'nullable|string|max:255',
+            'source_url' => 'nullable|url|max:255',
         ]);
 
         $article = new NewsArticle();
@@ -73,6 +75,8 @@ class NewsController extends Controller
         $article->content = $validated['content'];
         $article->author = $validated['author'] ?? 'PEDIPO Admin';
         $article->status = $validated['status'] ?? 'Published';
+        $article->source_name = $validated['source_name'] ?? null;
+        $article->source_url = $validated['source_url'] ?? null;
         if (!empty($validated['published_at'])) {
             $article->published_at = $validated['published_at'];
         }
@@ -113,6 +117,8 @@ class NewsController extends Controller
             'status' => 'nullable|string|in:Published,Draft',
             'published_at' => 'nullable|date',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
+            'source_name' => 'nullable|string|max:255',
+            'source_url' => 'nullable|url|max:255',
         ]);
 
         $article->title = $validated['title'];
@@ -121,6 +127,8 @@ class NewsController extends Controller
         $article->content = $validated['content'];
         $article->author = $validated['author'] ?? $article->author;
         $article->status = $validated['status'] ?? $article->status;
+        $article->source_name = $validated['source_name'] ?? $article->source_name;
+        $article->source_url = $validated['source_url'] ?? $article->source_url;
         if (!empty($validated['published_at'])) {
             $article->published_at = $validated['published_at'];
         }

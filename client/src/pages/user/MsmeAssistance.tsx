@@ -90,7 +90,7 @@ export const MsmeAssistance: React.FC = () => {
     }
 
     try {
-      const res = await MsmeService.create(formData);
+      await MsmeService.create(formData);
       setIsModalOpen(false);
       // Reset form
       setCompanyName("");

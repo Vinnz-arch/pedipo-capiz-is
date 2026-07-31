@@ -19,6 +19,8 @@ export interface NewsArticleData {
   author?: string;
   status?: "Published" | "Draft";
   published_at?: string;
+  source_name?: string;
+  source_url?: string;
   created_at?: string;
   comments?: NewsCommentData[];
 }

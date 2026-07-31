@@ -35,6 +35,7 @@ const ManageLandingPage = lazyWithDelay(() => import("../pages/ManageLandingPage
 const NewsList = lazyWithDelay(() => import("../pages/NewsList"))
 const NewsDetail = lazyWithDelay(() => import("../pages/NewsDetail"))
 const MsmeAssistance = lazyWithDelay(() => import("../pages/user/MsmeAssistance"))
+const ComparisonTool = lazyWithDelay(() => import("../pages/user/ComparisonTool/ComparisonTool"))
 
 const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType<any>>) => (
   <Suspense fallback={<LoadingScreen />}>
@@ -176,4 +177,14 @@ export const Routes = createBrowserRouter([
       </UserAuthGuard>
     ),
   },
+  {
+    path: PATHS.PORTAL.COMPARISON_TOOL,
+    element: (
+      <UserAuthGuard>
+        {withSuspense(ComparisonTool)}
+      </UserAuthGuard>
+    ),
+  }
+
+  
 ]);

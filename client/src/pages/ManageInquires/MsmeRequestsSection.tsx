@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { MsmeService, type MsmeRequestData } from "@/services/MsmeService";
 import { 
-  Briefcase, 
   FileText, 
   Download, 
   Trash2, 
   Edit3, 
   Check, 
   Loader2, 
-  Eye,
   Filter,
   X,
   ShieldAlert
@@ -19,7 +17,6 @@ export const MsmeRequestsSection: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<MsmeRequestData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filters State
   const [statusFilter, setStatusFilter] = useState("All");

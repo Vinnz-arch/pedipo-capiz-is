@@ -33,6 +33,8 @@ interface Project {
   image: string;
   incentives: string[];
   description: string;
+  sourceName?: string;
+  sourceUrl?: string;
 }
 
 export const InvestmentManagement: React.FC = () => {
@@ -87,6 +89,8 @@ export const InvestmentManagement: React.FC = () => {
   const [keyIncentives, setKeyIncentives] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [sourceName, setSourceName] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
 
   const resolveImageUrl = (path?: string) => {
     if (!path) return "/images/seafood_hub.png";
@@ -112,7 +116,9 @@ export const InvestmentManagement: React.FC = () => {
     incentives: (item.key_incentives || item.incentive_package) 
       ? (item.key_incentives || item.incentive_package)!.split(",").map(s => s.trim().toUpperCase()).filter(Boolean)
       : ["LOCAL INCENTIVES"],
-    description: item.description || item.incentive_package || "No description provided."
+    description: item.description || item.incentive_package || "No description provided.",
+    sourceName: item.source_name || "",
+    sourceUrl: item.source_url || "",
   });
 
   const loadData = async () => {
@@ -176,6 +182,8 @@ export const InvestmentManagement: React.FC = () => {
     setSelectedFile(null);
     setImagePreview(null);
     setEditingProjectId(null);
+    setSourceName("");
+    setSourceUrl("");
   };
 
   const openCreateModal = () => {
@@ -197,6 +205,8 @@ export const InvestmentManagement: React.FC = () => {
     setDescription(project.description);
     setImagePreview(project.image);
     setSelectedFile(null);
+    setSourceName(project.sourceName || "");
+    setSourceUrl(project.sourceUrl || "");
     setIsModalOpen(true);
   };
 
@@ -237,6 +247,8 @@ export const InvestmentManagement: React.FC = () => {
     if (municipalityId) formData.append("municipality_id", String(municipalityId));
     if (keyIncentives) formData.append("key_incentives", keyIncentives.trim());
     if (description) formData.append("description", description.trim());
+    if (sourceName) formData.append("source_name", sourceName.trim());
+    if (sourceUrl) formData.append("source_url", sourceUrl.trim());
 
     if (selectedFile && selectedFile instanceof File) {
       formData.append("image", selectedFile);
@@ -592,15 +604,28 @@ export const InvestmentManagement: React.FC = () => {
                 </div>
               </div>
 
-              {/* Description */}
-              <div>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Description
-                </span>
-                <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  {selectedProject.description}
-                </p>
-              </div>
+              {selectedProject.sourceName && (
+                <div>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                    Source of Investment
+                  </span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600">
+                    <Globe className="w-3.5 h-3.5" />
+                    {selectedProject.sourceUrl ? (
+                      <a
+                        href={selectedProject.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline text-blue-600"
+                      >
+                        {selectedProject.sourceName}
+                      </a>
+                    ) : (
+                      <span>{selectedProject.sourceName}</span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <hr className="border-slate-100" />
 
@@ -763,6 +788,31 @@ export const InvestmentManagement: React.FC = () => {
                       placeholder="Describe the proposed project, strategic location, target market, or investment opportunities..."
                       className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all resize-none"
                     />
+                  </div>
+
+                  {/* Row: Source of Investment & Link */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Source Name of Investment</label>
+                      <input
+                        type="text"
+                        value={sourceName}
+                        onChange={(e) => setSourceName(e.target.value)}
+                        placeholder="e.g. DTI Capiz / PEZA"
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Source Link URL</label>
+                      <input
+                        type="text"
+                        value={sourceUrl}
+                        onChange={(e) => setSourceUrl(e.target.value)}
+                        placeholder="e.g. https://www.dti.gov.ph"
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66] transition-all"
+                      />
+                    </div>
                   </div>
 
                   {/* Row 4: Upload Image */}

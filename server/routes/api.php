@@ -10,6 +10,10 @@ use App\Http\Controllers\API\v1\LandingPageController;
 use App\Http\Controllers\API\v1\NewsController;
 use App\Http\Controllers\API\v1\MunicipalityController;
 use App\Http\Controllers\API\v1\MsmeAssistanceRequestController;
+use App\Http\Controllers\API\v1\ComparisonController;
+use App\Http\Controllers\API\v1\IndicatorController;
+use App\Http\Controllers\API\v1\SourceHistoryController;
+use App\Http\Controllers\API\v1\AdminManualUploadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +36,14 @@ Route::post('/v1/news/{id}/comments', [NewsController::class, 'storeComment']);
 
 // Public Municipalities Read
 Route::get('/v1/municipalities', [MunicipalityController::class, 'index']);
+
+// Comparison Tool Routes
+Route::get('/v1/comparison', [ComparisonController::class, 'index']);
+Route::get('/v1/latest-updates', [ComparisonController::class, 'latestUpdates']);
+Route::get('/v1/indicators', [IndicatorController::class, 'index']);
+Route::get('/v1/indicators/{id}', [IndicatorController::class, 'show']);
+Route::get('/v1/indicator-sources', [SourceHistoryController::class, 'sources']);
+Route::get('/v1/source-history', [SourceHistoryController::class, 'history']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -76,4 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']);
     Route::post('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']); // for multipart update if needed
     Route::delete('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'destroy']);
+
+    // Admin Indicator Manual Upload
+    Route::post('/v1/admin/manual-upload', [AdminManualUploadController::class, 'upload']);
 });

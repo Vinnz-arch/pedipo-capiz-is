@@ -3,12 +3,11 @@ import {
   User, 
   LayoutDashboard
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
-import { notify } from "../util/notify";
+
 
 const UserDashboard = () => {
   const clientUser = JSON.parse(localStorage.getItem("client_user") || "{}");

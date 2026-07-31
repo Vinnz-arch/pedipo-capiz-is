@@ -20,6 +20,8 @@ class NewsArticle extends Model
         'author',
         'status',
         'published_at',
+        'source_name',
+        'source_url',
     ];
 
     protected $casts = [

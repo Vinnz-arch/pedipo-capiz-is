@@ -27,6 +27,7 @@ export const PATHS = {
     ROOT: `${CLIENT_ROOT}`,
     DASHBOARD: `${CLIENT_ROOT}/dashboard`,
     INVESTOR_PORTAL: `${CLIENT_ROOT}/investorPortal`,
-    MSME_ASSISTANCE: `${CLIENT_ROOT}/msmeAssistance`
+    MSME_ASSISTANCE: `${CLIENT_ROOT}/msmeAssistance`,
+    COMPARISON_TOOL: `${CLIENT_ROOT}/comparisonTool`
   }
 };

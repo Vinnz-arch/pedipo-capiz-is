@@ -90,6 +90,8 @@ export const ManageLandingPage: React.FC = () => {
   const [newsPublishedAt, setNewsPublishedAt] = useState("");
   const [newsImageFile, setNewsImageFile] = useState<File | null>(null);
   const [newsImagePreview, setNewsImagePreview] = useState<string | null>(null);
+  const [newsSourceName, setNewsSourceName] = useState("");
+  const [newsSourceUrl, setNewsSourceUrl] = useState("");
 
   const fetchNews = async () => {
     try {
@@ -262,6 +264,8 @@ export const ManageLandingPage: React.FC = () => {
     setNewsPublishedAt(new Date().toISOString().slice(0, 16));
     setNewsImageFile(null);
     setNewsImagePreview(null);
+    setNewsSourceName("");
+    setNewsSourceUrl("");
     setIsNewsModalOpen(true);
   };
 
@@ -272,6 +276,8 @@ export const ManageLandingPage: React.FC = () => {
     setNewsContent(article.content);
     setNewsAuthor(article.author || "PEDIPO Admin");
     setNewsStatus(article.status || "Published");
+    setNewsSourceName(article.source_name || "");
+    setNewsSourceUrl(article.source_url || "");
     
     const formattedDate = article.published_at 
       ? new Date(article.published_at).toISOString().slice(0, 16) 
@@ -308,6 +314,12 @@ export const ManageLandingPage: React.FC = () => {
     formData.append("published_at", new Date(newsPublishedAt).toISOString());
     if (newsImageFile) {
       formData.append("image", newsImageFile);
+    }
+    if (newsSourceName) {
+      formData.append("source_name", newsSourceName.trim());
+    }
+    if (newsSourceUrl) {
+      formData.append("source_url", newsSourceUrl.trim());
     }
 
     try {
@@ -1066,7 +1078,23 @@ export const ManageLandingPage: React.FC = () => {
                                   <td className="px-4 py-3 max-w-xs">
                                     <div className="space-y-0.5">
                                       <p className="font-bold text-slate-900 leading-snug line-clamp-1">{art.title}</p>
-                                      <span className="text-[10px] text-slate-400 font-semibold">{art.author || "PEDIPO Admin"}</span>
+                                      <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-semibold">
+                                        <span>{art.author || "PEDIPO Admin"}</span>
+                                        {art.source_name && (
+                                          <>
+                                            <span className="text-slate-300">•</span>
+                                            <span className="text-blue-600 dark:text-blue-400">
+                                              {art.source_url ? (
+                                                <a href={art.source_url} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">
+                                                  Via {art.source_name}
+                                                </a>
+                                              ) : (
+                                                `Via ${art.source_name}`
+                                              )}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 text-slate-500 font-semibold">
@@ -1238,6 +1266,30 @@ export const ManageLandingPage: React.FC = () => {
                         <option value="Published">Published</option>
                         <option value="Draft">Draft</option>
                       </select>
+                    </div>
+                  </div>
+
+                  {/* News Source Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">News Source Agency</label>
+                      <input
+                        type="text"
+                        value={newsSourceName}
+                        onChange={(e) => setNewsSourceName(e.target.value)}
+                        placeholder="e.g. PSA Capiz / DTI Center"
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66]"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Source Article Link (URL)</label>
+                      <input
+                        type="text"
+                        value={newsSourceUrl}
+                        onChange={(e) => setNewsSourceUrl(e.target.value)}
+                        placeholder="e.g. https://psa.gov.ph/news/..."
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66]"
+                      />
                     </div>
                   </div>
 

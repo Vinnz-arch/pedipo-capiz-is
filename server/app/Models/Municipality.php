@@ -39,4 +39,13 @@ class Municipality extends Model
             }
         });
     }
+
+    /**
+     * Get the indicator values for the municipality.
+     */
+    public function indicatorValues()
+    {
+        return $this->hasMany(IndicatorValue::class, 'municipality_id');
+    }
 }
+
