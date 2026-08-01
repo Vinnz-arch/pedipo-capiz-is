@@ -16,6 +16,7 @@ import { LandingPageService, type LandingPageSettingData } from "@/services/Land
 import { OpportunityService, type OpportunityData } from "@/services/OpportunityService";
 import { NewsService, type NewsArticleData } from "@/services/NewsService";
 import logo from "../assets/logo.jpg";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -81,14 +82,7 @@ export const LandingPage: React.FC = () => {
   };
 
   if (isLoading || !settings) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 border-4 border-[#002B66] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-slate-500">Loading Capiz PEDIPO Portal...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading Capiz PEDIPO Portal..." />;
   }
 
   return (

@@ -8,17 +8,9 @@ import DataManagement from "@/pages/DataManagement/DataManagement";
 import LoadingScreen from "@/components/common/LoadingScreen";
 import LandingPage from "../pages/LandingPage";
 
-// Configurable minimum loading delay in milliseconds (e.g. 1000 = 1 second)
-export const LOADING_DELAY_MS = 3000;
-
-// Helper to enforce a minimum loading screen display time
-const lazyWithDelay = (importFn: () => Promise<any>, delay = LOADING_DELAY_MS) => {
-  return React.lazy(() =>
-    Promise.all([
-      importFn(),
-      new Promise((resolve) => setTimeout(resolve, delay))
-    ]).then(([moduleExports]) => moduleExports)
-  );
+// Helper to load components lazily
+const lazyWithDelay = (importFn: () => Promise<any>) => {
+  return React.lazy(importFn);
 };
 
 // LazyLoading with minimum display delay
