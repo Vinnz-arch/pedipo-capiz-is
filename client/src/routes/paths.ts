@@ -15,11 +15,10 @@ export const PATHS = {
     DASHBOARD: `${APP_ROOT}/dashboard`,
     MANAGE_INQUIRIES: `${APP_ROOT}/manageInquires`,
     MANAGE_USERS: `${APP_ROOT}/manageUsers`,
-    MANAGE_MUNICIPALITIES: `${APP_ROOT}/manageMunicipalities`,
     MANAGE_INVESTMENT_MANAGEMENT: `${APP_ROOT}/manageInvestmentManagement`,
-    MANAGE_DATA_MANAGEMENT: `${APP_ROOT}/manageDataManagement`,
     MANAGE_LANDING_PAGE: `${APP_ROOT}/manageLandingPage`,
-    MANAGE_NEWS: `${APP_ROOT}/manageNews`
+    MANAGE_NEWS: `${APP_ROOT}/manageNews`,
+    MANAGE_MSMES: `${APP_ROOT}/manageMsmes`
   },
 
   // User Portal
@@ -28,6 +27,8 @@ export const PATHS = {
     DASHBOARD: `${CLIENT_ROOT}/dashboard`,
     INVESTOR_PORTAL: `${CLIENT_ROOT}/investorPortal`,
     MSME_ASSISTANCE: `${CLIENT_ROOT}/msmeAssistance`,
-    COMPARISON_TOOL: `${CLIENT_ROOT}/comparisonTool`
+    COMPARISON_TOOL: `${CLIENT_ROOT}/comparisonTool`,
+    MSME_DIRECTORY: `${CLIENT_ROOT}/msmeDirectory`,
+    MSME_DETAIL: `${CLIENT_ROOT}/msmeDirectory/:id`
   }
 };

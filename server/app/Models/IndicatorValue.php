@@ -30,12 +30,14 @@ class IndicatorValue extends Model
         'last_updated' => 'datetime',
     ];
 
+    protected $appends = ['municipality'];
+
     /**
-     * Get the municipality that owns this indicator value.
+     * Get the static municipality that owns this indicator value.
      */
-    public function municipality(): BelongsTo
+    public function getMunicipalityAttribute()
     {
-        return $this->belongsTo(Municipality::class, 'municipality_id');
+        return Municipality::find($this->municipality_id);
     }
 
     /**

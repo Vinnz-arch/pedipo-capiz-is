@@ -116,7 +116,7 @@ class ComparisonController extends Controller
         $cacheKey = 'latest_updates';
 
         $updates = Cache::remember($cacheKey, now()->addMinutes(10), function () {
-            return IndicatorValue::with(['municipality', 'indicator', 'source'])
+            return IndicatorValue::with(['indicator', 'source'])
                 ->orderBy('updated_at', 'desc')
                 ->limit(10)
                 ->get()

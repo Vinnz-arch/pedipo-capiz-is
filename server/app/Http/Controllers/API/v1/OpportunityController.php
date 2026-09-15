@@ -17,7 +17,7 @@ class OpportunityController extends Controller
      */
     public function index(): JsonResponse
     {
-        $opportunities = Opportunity::with(['category', 'municipality'])->latest()->get();
+        $opportunities = Opportunity::with(['category'])->latest()->get();
         $categories = Category::all();
         $municipalities = \App\Models\Municipality::all();
 
@@ -36,7 +36,7 @@ class OpportunityController extends Controller
         $rules = [
             'project_name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'municipality_id' => 'nullable|exists:municipalities,id',
+            'municipality_id' => 'nullable|integer|in:1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17',
             'roi_estimate' => 'nullable|numeric',
             'land_area' => 'nullable|numeric',
             'key_incentives' => 'nullable|string',
@@ -80,7 +80,7 @@ class OpportunityController extends Controller
 
         return response()->json([
             'message' => 'Opportunity created successfully.',
-            'opportunity' => $opportunity->load(['category', 'municipality']),
+            'opportunity' => $opportunity->load(['category']),
         ], 201);
     }
 
@@ -89,7 +89,7 @@ class OpportunityController extends Controller
      */
     public function show(Opportunity $opportunity): JsonResponse
     {
-        return response()->json($opportunity->load(['category', 'municipality']));
+        return response()->json($opportunity->load(['category']));
     }
 
     /**
@@ -100,7 +100,7 @@ class OpportunityController extends Controller
         $rules = [
             'project_name' => 'sometimes|required|string|max:255',
             'category_id' => 'sometimes|required|exists:categories,id',
-            'municipality_id' => 'sometimes|nullable|exists:municipalities,id',
+            'municipality_id' => 'sometimes|nullable|integer|in:1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17',
             'roi_estimate' => 'nullable|numeric',
             'land_area' => 'nullable|numeric',
             'key_incentives' => 'nullable|string',
@@ -128,7 +128,7 @@ class OpportunityController extends Controller
 
         return response()->json([
             'message' => 'Opportunity updated successfully.',
-            'opportunity' => $opportunity->load(['category', 'municipality']),
+            'opportunity' => $opportunity->load(['category']),
         ]);
     }
 
@@ -152,7 +152,7 @@ class OpportunityController extends Controller
     {
         $data = Cache::remember('public_opportunities', 3600, function () {
             return [
-                'opportunities' => Opportunity::with(['category', 'municipality'])->where('status', 'Published')->latest()->get(),
+                'opportunities' => Opportunity::with(['category'])->where('status', 'Published')->latest()->get(),
                 'categories' => Category::all(),
             ];
         });

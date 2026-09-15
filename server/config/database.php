@@ -99,6 +99,7 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

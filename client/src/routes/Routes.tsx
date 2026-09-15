@@ -4,7 +4,6 @@ import AuthGuard from "../components/auth/AuthGuard";
 import UserAuthGuard from "../components/auth/UserAuthGuard";
 import GuestGuard from "../components/auth/GuestGuard";
 import React, { Suspense } from "react";
-import DataManagement from "@/pages/DataManagement/DataManagement";
 import LoadingScreen from "@/components/common/LoadingScreen";
 import LandingPage from "../pages/LandingPage";
 
@@ -19,7 +18,6 @@ const Login = lazyWithDelay(() => import("../pages/auth/Login"))
 const ManageUsers = lazyWithDelay(() => import("../pages/Users/ManageUsers"))
 const UserLogin = lazyWithDelay(() => import("../pages/auth/UserLogin"))
 const UserDashboard = lazyWithDelay(() => import("../pages/UserDashboard"))
-const Municipalities = lazyWithDelay(() => import("../pages/Municipalities/Municipalities"))
 const InvestmentManagement = lazyWithDelay(() => import("../pages/InvestmentManagement/InvestmentManagement"))
 const InvestorPortal = lazyWithDelay(() => import("../pages/user/InvestorPortal"))
 const ManageInquiries = lazyWithDelay(() => import("../pages/ManageInquires/ManageInquires"))
@@ -28,6 +26,9 @@ const NewsList = lazyWithDelay(() => import("../pages/NewsList"))
 const NewsDetail = lazyWithDelay(() => import("../pages/NewsDetail"))
 const MsmeAssistance = lazyWithDelay(() => import("../pages/user/MsmeAssistance"))
 const ComparisonTool = lazyWithDelay(() => import("../pages/user/ComparisonTool/ComparisonTool"))
+const ManageMsmes = lazyWithDelay(() => import("../pages/DataManagement/ManageMsmes"))
+const MsmeDirectory = lazyWithDelay(() => import("../pages/user/MsmeDirectory"))
+const MsmeDetail = lazyWithDelay(() => import("../pages/user/MsmeDetail"))
 
 const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType<any>>) => (
   <Suspense fallback={<LoadingScreen />}>
@@ -103,14 +104,7 @@ export const Routes = createBrowserRouter([
       </AuthGuard>
     ),
   },
-  {
-    path: PATHS.APP.MANAGE_MUNICIPALITIES,
-    element: (
-      <AuthGuard>
-        {withSuspense(Municipalities)}
-      </AuthGuard>
-    ),
-  },
+
   {
     path: PATHS.APP.MANAGE_INVESTMENT_MANAGEMENT,
     element: (
@@ -120,18 +114,18 @@ export const Routes = createBrowserRouter([
     ),
   },
   {
-    path: PATHS.APP.MANAGE_DATA_MANAGEMENT,
-    element: (
-      <AuthGuard>
-        <DataManagement />
-      </AuthGuard>
-    ),
-  },
-  {
     path: PATHS.APP.MANAGE_LANDING_PAGE,
     element: (
       <AuthGuard>
         {withSuspense(ManageLandingPage)}
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.MANAGE_MSMES,
+    element: (
+      <AuthGuard>
+        {withSuspense(ManageMsmes)}
       </AuthGuard>
     ),
   },
@@ -174,6 +168,22 @@ export const Routes = createBrowserRouter([
     element: (
       <UserAuthGuard>
         {withSuspense(ComparisonTool)}
+      </UserAuthGuard>
+    ),
+  },
+  {
+    path: PATHS.PORTAL.MSME_DIRECTORY,
+    element: (
+      <UserAuthGuard>
+        {withSuspense(MsmeDirectory)}
+      </UserAuthGuard>
+    ),
+  },
+  {
+    path: PATHS.PORTAL.MSME_DETAIL,
+    element: (
+      <UserAuthGuard>
+        {withSuspense(MsmeDetail)}
       </UserAuthGuard>
     ),
   }

@@ -18,11 +18,6 @@ export const routes = [
     icon: Icons.LayoutDashboard,
   },
   {
-    label: "Municipalities",
-    path: PATHS.APP.MANAGE_MUNICIPALITIES,
-    icon: Icons.Landmark,
-  },
-  {
     label: "Investment Management",
     path: PATHS.APP.MANAGE_INVESTMENT_MANAGEMENT,
     icon: Icons.TrendingUp,
@@ -32,10 +27,10 @@ export const routes = [
     path: PATHS.APP.MANAGE_INQUIRIES,
     icon: Icons.MessageSquare,
   },
-  { 
-    label: "Data Management",
-    path: PATHS.APP.MANAGE_DATA_MANAGEMENT,
-    icon: Icons.Database,
+  {
+    label: "MSMEs",
+    path: PATHS.APP.MANAGE_MSMES,
+    icon: Icons.Store,
   },
   {
     label: "Landing Page CMS",

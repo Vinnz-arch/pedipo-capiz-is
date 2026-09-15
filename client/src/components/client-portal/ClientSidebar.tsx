@@ -28,6 +28,11 @@ export const clientRoutes = [
     icon: Icons.Briefcase,
   },
   {
+    label: "MSME Directory",
+    path: PATHS.PORTAL.MSME_DIRECTORY,
+    icon: Icons.Store,
+  },
+  {
     label: "Comparison Tool",
     path: PATHS.PORTAL.COMPARISON_TOOL,
     icon: Icons.Scale,

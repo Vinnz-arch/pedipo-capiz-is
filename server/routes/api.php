@@ -14,6 +14,7 @@ use App\Http\Controllers\API\v1\ComparisonController;
 use App\Http\Controllers\API\v1\IndicatorController;
 use App\Http\Controllers\API\v1\SourceHistoryController;
 use App\Http\Controllers\API\v1\AdminManualUploadController;
+use App\Http\Controllers\API\v1\MsmeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,10 @@ Route::post('/v1/news/{id}/comments', [NewsController::class, 'storeComment']);
 
 // Public Municipalities Read
 Route::get('/v1/municipalities', [MunicipalityController::class, 'index']);
+
+// Public MSME Directory Read
+Route::get('/v1/public/msmes', [MsmeController::class, 'publicIndex']);
+Route::get('/v1/public/msmes/{id}', [MsmeController::class, 'publicShow']);
 
 // Comparison Tool Routes
 Route::get('/v1/comparison', [ComparisonController::class, 'index']);
@@ -76,10 +81,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/v1/news/{id}', [NewsController::class, 'update']); // for multipart form-data
     Route::delete('/v1/news/{id}', [NewsController::class, 'destroy']);
 
-    // Municipalities CRUD
-    Route::post('/v1/municipalities', [MunicipalityController::class, 'store']);
-    Route::post('/v1/municipalities/{municipality}', [MunicipalityController::class, 'update']);
-    Route::delete('/v1/municipalities/{municipality}', [MunicipalityController::class, 'destroy']);
+    // Municipalities CRUD (Removed - table is now a static read-only repository)
 
     // MSME Assistance Requests
     Route::get('/v1/msme-requests', [MsmeAssistanceRequestController::class, 'index']);
@@ -88,6 +90,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']);
     Route::post('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']); // for multipart update if needed
     Route::delete('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'destroy']);
+
+    // MSME CRUD & Archive
+    Route::get('/v1/msmes/dashboard-stats', [MsmeController::class, 'dashboardStats']);
+    Route::apiResource('/v1/msmes', MsmeController::class);
+    Route::post('/v1/msmes/{id}', [MsmeController::class, 'update']);
+    Route::post('/v1/msmes/{id}/archive', [MsmeController::class, 'archive']);
 
     // Admin Indicator Manual Upload
     Route::post('/v1/admin/manual-upload', [AdminManualUploadController::class, 'upload']);

@@ -16,7 +16,7 @@ class MunicipalityController extends Controller
      */
     public function index(): JsonResponse
     {
-        $municipalities = Municipality::orderBy('name', 'asc')->get();
+        $municipalities = Municipality::all()->sortBy('name')->values();
 
         return response()->json([
             'municipalities' => $municipalities,

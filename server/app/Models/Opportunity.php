@@ -31,6 +31,8 @@ class Opportunity extends Model
         'land_area' => 'float',
     ];
 
+    protected $appends = ['municipality'];
+
     /**
      * Get the category that owns the opportunity.
      */
@@ -40,10 +42,10 @@ class Opportunity extends Model
     }
 
     /**
-     * Get the municipality that owns the opportunity.
+     * Get the static municipality that owns the opportunity.
      */
-    public function municipality(): BelongsTo
+    public function getMunicipalityAttribute()
     {
-        return $this->belongsTo(Municipality::class);
+        return Municipality::find($this->municipality_id);
     }
 }

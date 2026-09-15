@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             UserSeeder::class,
             CategorySeeder::class,
-            MunicipalitySeeder::class,
+            // MunicipalitySeeder::class,
             IndicatorSourceSeeder::class,
             IndicatorSeeder::class,
             IndicatorValueSeeder::class,
@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             LandingPageSettingSeeder::class,
             NewsArticleSeeder::class,
             MsmeAssistanceRequestSeeder::class,
+            MsmeSeeder::class,
         ]);
     }
 }
