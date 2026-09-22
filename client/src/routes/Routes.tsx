@@ -29,6 +29,7 @@ const ComparisonTool = lazyWithDelay(() => import("../pages/user/ComparisonTool/
 const ManageMsmes = lazyWithDelay(() => import("../pages/DataManagement/ManageMsmes"))
 const MsmeDirectory = lazyWithDelay(() => import("../pages/user/MsmeDirectory"))
 const MsmeDetail = lazyWithDelay(() => import("../pages/user/MsmeDetail"))
+const DataEntry = lazyWithDelay(() => import("../pages/DataEntry/DataEntry"))
 
 const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType<any>>) => (
   <Suspense fallback={<LoadingScreen />}>
@@ -126,6 +127,14 @@ export const Routes = createBrowserRouter([
     element: (
       <AuthGuard>
         {withSuspense(ManageMsmes)}
+      </AuthGuard>
+    ),
+  },
+  {
+    path: PATHS.APP.DATA_ENTRY,
+    element: (
+      <AuthGuard>
+        {withSuspense(DataEntry)}
       </AuthGuard>
     ),
   },

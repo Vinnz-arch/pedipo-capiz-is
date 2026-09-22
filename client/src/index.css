@@ -98,3 +98,34 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 }
+
+/* DOCX Preview Page Styles */
+.docx-viewer-wrapper .docx-wrapper {
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 1.5rem !important;
+  width: 100% !important;
+}
+.docx-viewer-wrapper .docx {
+  background: #ffffff !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  margin-bottom: 2rem !important;
+  color: #1e293b !important;
+  max-width: 850px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+.docx-viewer-wrapper table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 1rem 0 !important;
+}
+.docx-viewer-wrapper td, .docx-viewer-wrapper th {
+  border: 1px solid #cbd5e1 !important;
+  padding: 0.5rem 0.75rem !important;
+}

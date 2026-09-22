@@ -22,6 +22,11 @@ export const routes = [
     path: PATHS.APP.MANAGE_INVESTMENT_MANAGEMENT,
     icon: Icons.TrendingUp,
   },
+  {
+    label: "Data Entry",
+    path: PATHS.APP.DATA_ENTRY,
+    icon: Icons.FileSpreadsheet,
+  },
   { 
     label: "Inquiries",
     path: PATHS.APP.MANAGE_INQUIRIES,

@@ -193,7 +193,10 @@ export const MsmeDirectory: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 px-1">
+              <span>Showing {msmes.length} of {totalRecords} registered businesses</span>
+            </div>
             
             {/* 3 Column Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

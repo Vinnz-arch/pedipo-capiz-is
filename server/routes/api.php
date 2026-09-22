@@ -14,7 +14,9 @@ use App\Http\Controllers\API\v1\ComparisonController;
 use App\Http\Controllers\API\v1\IndicatorController;
 use App\Http\Controllers\API\v1\SourceHistoryController;
 use App\Http\Controllers\API\v1\AdminManualUploadController;
+use App\Http\Controllers\API\v1\AdminDashboardController;
 use App\Http\Controllers\API\v1\MsmeController;
+use App\Http\Controllers\API\v1\ParentOpportunityController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -25,8 +27,18 @@ Route::post('/v1/login', [AuthController::class, 'login'])->middleware('throttle
 Route::post('/v1/user/login', [UserAuthController::class, 'login'])->middleware('throttle:5,1');
 
 // Public/Dashboard read endpoints
+Route::get('/v1/parent-opportunities', [ParentOpportunityController::class, 'index']);
+Route::get('/v1/portal/parent-opportunities', [ParentOpportunityController::class, 'publicIndex']);
+Route::get('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'show']);
+Route::get('/v1/parent-opportunities/{id}/operators-and-production', [ParentOpportunityController::class, 'getOperatorsAndProduction']);
+Route::get('/v1/portal/parent-opportunities/{id}/operators-and-production', [ParentOpportunityController::class, 'getOperatorsAndProduction']);
+Route::get('/v1/parent-opportunities/{id}/documents/{documentId}/file', [ParentOpportunityController::class, 'streamDocument']);
+
 Route::get('/v1/opportunities', [OpportunityController::class, 'index']);
 Route::get('/v1/portal/opportunities', [OpportunityController::class, 'publicOpportunities']);
+Route::get('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'getSpreadsheet']);
+Route::get('/v1/opportunities/{id}/documents', [OpportunityController::class, 'getDocuments']);
+Route::get('/v1/opportunities/{id}/documents/{documentId}/file', [OpportunityController::class, 'streamDocument']);
 Route::post('/v1/portal/inquiries', [InquiryController::class, 'store']);
 Route::get('/v1/landing-settings', [LandingPageController::class, 'getSettings']);
 
@@ -61,12 +73,35 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/v1/users', UserController::class);
     Route::get('/v1/users/{user}/logs', [UserLogController::class, 'index']);
 
+    // Parent Opportunities CRUD & Nested Child Projects
+    Route::post('/v1/parent-opportunities', [ParentOpportunityController::class, 'store']);
+    Route::put('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'update']);
+    Route::post('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'update']); // for multipart
+    Route::delete('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'destroy']);
+    Route::post('/v1/parent-opportunities/{parentOpportunity}/projects', [ParentOpportunityController::class, 'storeChildProject']);
+    Route::put('/v1/child-projects/{project}', [ParentOpportunityController::class, 'updateChildProject']);
+    Route::post('/v1/child-projects/{project}', [ParentOpportunityController::class, 'updateChildProject']); // for multipart
+    Route::put('/v1/child-projects/{project}/move', [ParentOpportunityController::class, 'moveChildProject']);
+    Route::delete('/v1/child-projects/{project}', [ParentOpportunityController::class, 'destroyChildProject']);
+
+    // Parent Opportunities Operators & Production Data & Documents
+    Route::put('/v1/parent-opportunities/{id}/operators-and-production', [ParentOpportunityController::class, 'updateOperatorsAndProduction']);
+    Route::post('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet/upload', [ParentOpportunityController::class, 'uploadSpreadsheet']);
+    Route::delete('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet/files/{fileId}', [ParentOpportunityController::class, 'deleteSpreadsheetFile']);
+    Route::delete('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet', [ParentOpportunityController::class, 'deleteSpreadsheet']);
+    Route::post('/v1/parent-opportunities/{id}/documents', [ParentOpportunityController::class, 'uploadDocument']);
+    Route::delete('/v1/parent-opportunities/{id}/documents/{documentId}', [ParentOpportunityController::class, 'deleteDocument']);
+
     // Opportunities CRUD & Sync
     Route::post('/v1/opportunities/sync', [OpportunityController::class, 'syncPortal']);
     Route::post('/v1/opportunities', [OpportunityController::class, 'store']);
     Route::put('/v1/opportunities/{opportunity}', [OpportunityController::class, 'update']);
     Route::post('/v1/opportunities/{opportunity}', [OpportunityController::class, 'update']); // for multipart form-data
     Route::delete('/v1/opportunities/{opportunity}', [OpportunityController::class, 'destroy']);
+    Route::put('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'updateSpreadsheet']);
+    Route::post('/v1/opportunities/{id}/spreadsheet/upload', [OpportunityController::class, 'uploadSpreadsheet']);
+    Route::post('/v1/opportunities/{id}/documents', [OpportunityController::class, 'uploadDocument']);
+    Route::delete('/v1/opportunities/{id}/documents/{documentId}', [OpportunityController::class, 'deleteDocument']);
 
     // Inquiries CRUD
     Route::apiResource('/v1/inquiries', InquiryController::class);
@@ -99,4 +134,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin Indicator Manual Upload
     Route::post('/v1/admin/manual-upload', [AdminManualUploadController::class, 'upload']);
+
+    // Admin Aggregated Dashboard
+    Route::get('/v1/admin/dashboard', [AdminDashboardController::class, 'index']);
+    Route::post('/v1/admin/dashboard/refresh', [AdminDashboardController::class, 'refresh']);
 });

@@ -15,7 +15,6 @@ import {
   Eye, 
   MapPin, 
   Store, 
-  Users, 
   Building2, 
   FileText, 
   X, 

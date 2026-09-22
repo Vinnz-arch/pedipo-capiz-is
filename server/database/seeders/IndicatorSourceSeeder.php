@@ -69,6 +69,20 @@ class IndicatorSourceSeeder extends Seeder
                 'description' => 'Local Provincial Economic Development and Investment Promotion Office records.',
                 'confidence_level' => 'High',
             ],
+            [
+                'name' => 'Capiz Electric Cooperative, Inc.',
+                'code' => 'CAPELCO',
+                'website_url' => 'https://capelco.com.ph',
+                'description' => 'Sole electric distribution utility cooperative serving the province of Capiz and Roxas City.',
+                'confidence_level' => 'High',
+            ],
+            [
+                'name' => 'Metro Roxas Water District',
+                'code' => 'MRWD',
+                'website_url' => 'https://metroroxaswd.gov.ph',
+                'description' => 'Government-owned water service provider in Roxas City and adjacent municipalities in Capiz.',
+                'confidence_level' => 'High',
+            ],
         ];
 
         foreach ($sources as $source) {

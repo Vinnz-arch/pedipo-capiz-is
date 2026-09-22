@@ -18,7 +18,8 @@ export const PATHS = {
     MANAGE_INVESTMENT_MANAGEMENT: `${APP_ROOT}/manageInvestmentManagement`,
     MANAGE_LANDING_PAGE: `${APP_ROOT}/manageLandingPage`,
     MANAGE_NEWS: `${APP_ROOT}/manageNews`,
-    MANAGE_MSMES: `${APP_ROOT}/manageMsmes`
+    MANAGE_MSMES: `${APP_ROOT}/manageMsmes`,
+    DATA_ENTRY: `${APP_ROOT}/dataEntry`
   },
 
   // User Portal

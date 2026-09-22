@@ -34,6 +34,8 @@ class IndicatorValueSeeder extends Seeder
                 'manufacturing_share' => 22.0,
                 'services_share' => 20.0,
                 'infrastructure' => 88.0,
+                'power_rate' => 11.25,
+                'water_rate' => 28.50,
             ],
             'Pontevedra' => [
                 'gdp' => 10.3,
@@ -48,6 +50,8 @@ class IndicatorValueSeeder extends Seeder
                 'manufacturing_share' => 19.0,
                 'services_share' => 10.0,
                 'infrastructure' => 72.0,
+                'power_rate' => 11.45,
+                'water_rate' => 26.50,
             ],
             'Pilar' => [
                 'gdp' => 9.1,
@@ -62,6 +66,8 @@ class IndicatorValueSeeder extends Seeder
                 'manufacturing_share' => 14.0,
                 'services_share' => 8.0,
                 'infrastructure' => 68.0,
+                'power_rate' => 11.60,
+                'water_rate' => 25.00,
             ],
             'Panay' => [
                 'gdp' => 8.5,
@@ -76,6 +82,8 @@ class IndicatorValueSeeder extends Seeder
                 'manufacturing_share' => 10.0,
                 'services_share' => 8.0,
                 'infrastructure' => 70.0,
+                'power_rate' => 11.35,
+                'water_rate' => 30.00,
             ],
             'Cuartero' => [
                 'gdp' => 5.2,
@@ -90,6 +98,8 @@ class IndicatorValueSeeder extends Seeder
                 'manufacturing_share' => 15.0,
                 'services_share' => 10.0,
                 'infrastructure' => 58.0,
+                'power_rate' => 11.80,
+                'water_rate' => 24.00,
             ],
             'Dao' => [
                 'gdp' => 6.1,
@@ -104,6 +114,8 @@ class IndicatorValueSeeder extends Seeder
                 'manufacturing_share' => 17.0,
                 'services_share' => 12.0,
                 'infrastructure' => 60.0,
+                'power_rate' => 11.75,
+                'water_rate' => 25.50,
             ],
             'Ivisan' => [
                 'gdp' => 7.8,
@@ -118,6 +130,8 @@ class IndicatorValueSeeder extends Seeder
                 'manufacturing_share' => 18.0,
                 'services_share' => 14.0,
                 'infrastructure' => 74.0,
+                'power_rate' => 11.30,
+                'water_rate' => 31.20,
             ],
         ];
 
@@ -135,79 +149,104 @@ class IndicatorValueSeeder extends Seeder
             'manufacturing_share' => 15.0,
             'services_share' => 15.0,
             'infrastructure' => 62.0,
+            'power_rate' => 11.55,
+            'water_rate' => 26.00,
         ];
 
-        $year = 2025; // baseline year
+        $years = [2025, 2026];
 
-        foreach ($municipalities as $muni) {
-            $muniMetrics = $metrics[$muni->name] ?? $fallback;
+        foreach ($years as $year) {
+            $yearFactor = $year === 2026 ? 1.05 : 1.0;
 
-            // Seed demographic values directly from municipalities table
-            if (isset($indicators['population'])) {
-                IndicatorValue::updateOrCreate(
-                    [
-                        'municipality_id' => $muni->id,
-                        'indicator_id' => $indicators['population'],
-                        'year' => $year,
-                        'quarter' => null,
-                    ],
-                    [
-                        'source_id' => $sources['PSA'],
-                        'value' => $muni->population,
-                        'verification_status' => 'verified',
-                    ]
-                );
-            }
+            foreach ($municipalities as $muni) {
+                $muniMetrics = $metrics[$muni->name] ?? $fallback;
 
-            if (isset($indicators['land_area'])) {
-                IndicatorValue::updateOrCreate(
-                    [
-                        'municipality_id' => $muni->id,
-                        'indicator_id' => $indicators['land_area'],
-                        'year' => $year,
-                        'quarter' => null,
-                    ],
-                    [
-                        'source_id' => $sources['PSA'],
-                        'value' => $muni->land_area,
-                        'verification_status' => 'verified',
-                    ]
-                );
-            }
-
-            // Seed other economic & sectoral metrics
-            foreach ($muniMetrics as $indCode => $val) {
-                if (!isset($indicators[$indCode])) continue;
-
-                // Determine appropriate source
-                $srcCode = 'PSA';
-                if (in_array($indCode, ['registered_businesses', 'fdi', 'investment'])) {
-                    $srcCode = 'DTI';
-                } elseif (in_array($indCode, ['municipal_income'])) {
-                    $srcCode = 'BLGF';
-                } elseif ($indCode === 'aquaculture_share') {
-                    $srcCode = 'BFAR';
-                } elseif ($indCode === 'agriculture_share') {
-                    $srcCode = 'DA';
-                } elseif ($indCode === 'tourism_share') {
-                    $srcCode = 'DOT';
-                } elseif ($indCode === 'infrastructure') {
-                    $srcCode = 'PEDIPO';
+                // Seed demographic values
+                if (isset($indicators['population'])) {
+                    $popVal = $year === 2026 ? round($muni->population * 1.012) : $muni->population;
+                    IndicatorValue::updateOrCreate(
+                        [
+                            'municipality_id' => $muni->id,
+                            'indicator_id' => $indicators['population'],
+                            'year' => $year,
+                            'quarter' => null,
+                        ],
+                        [
+                            'source_id' => $sources['PSA'] ?? 1,
+                            'value' => $popVal,
+                            'verification_status' => 'verified',
+                        ]
+                    );
                 }
 
-                IndicatorValue::updateOrCreate(
-                    [
-                        'municipality_id' => $muni->id,
-                        'indicator_id' => $indicators[$indCode],
-                        'year' => $year,
-                        'quarter' => null,
-                    ],
-                    [
-                        'source_id' => $sources[$srcCode] ?? $sources['PSA'],
-                        'value' => $val,
-                        'verification_status' => 'verified',
-                    ]
-                );
+                if (isset($indicators['land_area'])) {
+                    IndicatorValue::updateOrCreate(
+                        [
+                            'municipality_id' => $muni->id,
+                            'indicator_id' => $indicators['land_area'],
+                            'year' => $year,
+                            'quarter' => null,
+                        ],
+                        [
+                            'source_id' => $sources['PSA'] ?? 1,
+                            'value' => $muni->land_area,
+                            'verification_status' => 'verified',
+                        ]
+                    );
+                }
+
+                // Seed other economic, sectoral, & utility metrics
+                foreach ($muniMetrics as $indCode => $val) {
+                    if (!isset($indicators[$indCode])) continue;
+
+                    // Determine appropriate source
+                    $srcCode = 'PSA';
+                    if (in_array($indCode, ['registered_businesses', 'fdi', 'investment'])) {
+                        $srcCode = 'DTI';
+                    } elseif (in_array($indCode, ['municipal_income'])) {
+                        $srcCode = 'BLGF';
+                    } elseif ($indCode === 'aquaculture_share') {
+                        $srcCode = 'BFAR';
+                    } elseif ($indCode === 'agriculture_share') {
+                        $srcCode = 'DA';
+                    } elseif ($indCode === 'tourism_share') {
+                        $srcCode = 'DOT';
+                    } elseif ($indCode === 'infrastructure') {
+                        $srcCode = 'PEDIPO';
+                    } elseif ($indCode === 'power_rate') {
+                        $srcCode = 'CAPELCO';
+                    } elseif ($indCode === 'water_rate') {
+                        $srcCode = 'MRWD';
+                    }
+
+                    // Apply mild year adjustments if 2026
+                    $actualVal = $val;
+                    if ($year === 2026) {
+                        if ($indCode === 'power_rate') {
+                            $actualVal = round($val + 0.15, 2);
+                        } elseif ($indCode === 'water_rate') {
+                            $actualVal = round($val + 0.60, 2);
+                        } elseif (in_array($indCode, ['gdp', 'municipal_income', 'investment'])) {
+                            $actualVal = round($val * $yearFactor, 2);
+                        } elseif ($indCode === 'registered_businesses') {
+                            $actualVal = round($val * 1.04);
+                        }
+                    }
+
+                    IndicatorValue::updateOrCreate(
+                        [
+                            'municipality_id' => $muni->id,
+                            'indicator_id' => $indicators[$indCode],
+                            'year' => $year,
+                            'quarter' => null,
+                        ],
+                        [
+                            'source_id' => $sources[$srcCode] ?? ($sources['PSA'] ?? 1),
+                            'value' => $actualVal,
+                            'verification_status' => 'verified',
+                        ]
+                    );
+                }
             }
         }
     }

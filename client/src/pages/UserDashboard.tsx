@@ -50,7 +50,7 @@ const UserDashboard: React.FC = () => {
 
   // Compute metrics
   const totalOpps = opportunities.length;
-  const highRoiOpps = opportunities.filter(o => Number(o.roi_estimate || 0) >= 14).slice(0, 2);
+  const featuredOpps = opportunities.slice(0, 2);
   const totalMsmeRequests = msmeRequests.length;
   const completedRequests = msmeRequests.filter(r => r.status === "Completed").length;
   const pendingRequests = totalMsmeRequests - completedRequests;
@@ -189,8 +189,8 @@ const UserDashboard: React.FC = () => {
               <div className="lg:col-span-6 bg-white border border-slate-200/60 rounded-3xl p-6 space-y-4.5">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900">Featured High-Yield Projects</h3>
-                    <p className="text-[10px] text-slate-400 font-medium">Opportunities with estimated ROI ≥ 14%</p>
+                    <h3 className="text-base font-extrabold text-slate-900">Featured Priority Projects</h3>
+                    <p className="text-[10px] text-slate-400 font-medium">Strategic investment opportunities in Capiz</p>
                   </div>
                   <Link to={PATHS.PORTAL.INVESTOR_PORTAL} className="text-xs font-bold text-[#002B66] hover:underline inline-flex items-center gap-1">
                     <span>View All</span>
@@ -199,12 +199,12 @@ const UserDashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-3.5">
-                  {highRoiOpps.length === 0 ? (
+                  {featuredOpps.length === 0 ? (
                     <div className="text-center py-8 text-slate-400 text-xs italic">
-                      No featured high-ROI opportunities registered yet.
+                      No featured priority opportunities registered yet.
                     </div>
                   ) : (
-                    highRoiOpps.map((opp) => (
+                    featuredOpps.map((opp) => (
                       <div 
                         key={opp.id} 
                         className="flex items-start gap-4 p-3.5 rounded-2xl border border-slate-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all"
@@ -225,8 +225,8 @@ const UserDashboard: React.FC = () => {
                         <div className="space-y-1 w-full min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <h4 className="font-bold text-slate-900 text-xs truncate leading-snug">{opp.project_name}</h4>
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[9px] font-black shrink-0 border border-emerald-100">
-                              {opp.roi_estimate}% ROI
+                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[9px] font-bold shrink-0 border border-blue-100">
+                              {opp.land_area ? `${opp.land_area} Ha` : "Priority"}
                             </span>
                           </div>
                           <p className="text-[10px] text-slate-450 line-clamp-2 leading-relaxed">

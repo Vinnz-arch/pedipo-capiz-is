@@ -30,7 +30,9 @@ import {
   Sparkles,
   Calendar,
   Activity,
-  Database
+  Database,
+  Zap,
+  Droplet
 } from "lucide-react";
 import { notify } from "@/util/notify";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -225,6 +227,21 @@ export const ComparisonTool: React.FC = () => {
       );
     }
 
+    // Utility rates insights
+    const powerMin = getExtreme("power_rate", false);
+    if (powerMin && powerMin.value > 0) {
+      insights.push(
+        `${powerMin.muni.name} offers the most cost-effective electricity tariff among selected LGUs at ₱${powerMin.value.toFixed(2)}/kWh via CAPELCO distribution.`
+      );
+    }
+
+    const waterMin = getExtreme("water_rate", false);
+    if (waterMin && waterMin.value > 0) {
+      insights.push(
+        `${waterMin.muni.name} features the most competitive potable water rate at ₱${waterMin.value.toFixed(2)}/cu.m.`
+      );
+    }
+
     return insights;
   };
 
@@ -244,6 +261,15 @@ export const ComparisonTool: React.FC = () => {
       name: m.name,
       "Registered Businesses": m.values.registered_businesses?.value ?? 0,
       "FDI (M PHP)": m.values.fdi?.value ?? 0,
+    }));
+  };
+
+  const getUtilityChartData = () => {
+    if (!comparisonData) return [];
+    return comparisonData.selected.map(m => ({
+      name: m.name,
+      "Power Rate (₱/kWh)": m.values.power_rate?.value ?? 0,
+      "Water Rate (₱/cu.m)": m.values.water_rate?.value ?? 0,
     }));
   };
 
@@ -498,6 +524,39 @@ export const ComparisonTool: React.FC = () => {
                   </CardContent>
                 </Card>
 
+                {/* Utility Rates comparison */}
+                <Card className="border border-slate-200/60 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-xs bg-white col-span-1 lg:col-span-2">
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800/60 pb-3 px-6">
+                    <div className="space-y-0.5">
+                      <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-amber-500" />
+                        <span>Utility Rates Comparison</span>
+                      </CardTitle>
+                      <CardDescription className="text-[10px]">
+                        Electricity tariffs (₱/kWh via CAPELCO) & municipal water rates (₱/cu.m via MRWD / local waterworks)
+                      </CardDescription>
+                    </div>
+                    <Badge variant="outline" className="text-[8.5px] font-bold uppercase tracking-widest bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50">
+                      Utility Tariffs
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="h-72 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={getUtilityChartData()} margin={{ top: 20, right: 10, left: -10, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} fontWeight="bold" tickLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                          <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }} />
+                          <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px', fontWeight: 'bold' }} />
+                          <Bar dataKey="Power Rate (₱/kWh)" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={18} />
+                          <Bar dataKey="Water Rate (₱/cu.m)" fill="#0284c7" radius={[4, 4, 0, 0]} barSize={18} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
               </div>
             )}
 
@@ -602,6 +661,99 @@ export const ComparisonTool: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Utility Rates Breakdown Card */}
+            <Card className="border border-slate-200/60 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-xs bg-white">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800/60 pb-3 px-6">
+                <div className="space-y-0.5">
+                  <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    <span>Municipal Utility Rates (Power & Water)</span>
+                  </CardTitle>
+                  <CardDescription className="text-[10px]">
+                    Comparative commercial & residential utility tariffs from Capiz Electric Cooperative (CAPELCO) and Metro Roxas Water District (MRWD)
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="text-[8.5px] font-bold uppercase tracking-widest bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50">
+                  Utility Rates
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {comparisonData.selected.map((muni, index) => {
+                    const powerVal = muni.values.power_rate?.value;
+                    const waterVal = muni.values.water_rate?.value;
+                    const powerAvg = comparisonData.provincialAverages.power_rate ?? 11.53;
+                    const waterAvg = comparisonData.provincialAverages.water_rate ?? 26.51;
+                    const accentColor = colorPalette[index % colorPalette.length];
+
+                    return (
+                      <div key={muni.id} className="border border-slate-150 dark:border-slate-800/80 rounded-2xl p-4.5 space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition duration-300 bg-slate-50/20">
+                        <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800/40">
+                          <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: accentColor }} />
+                            {muni.name}
+                          </span>
+                          <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-slate-400 font-bold px-1.5">
+                            Utilities
+                          </Badge>
+                        </div>
+
+                        {/* Power Rate Box */}
+                        <div className="p-3.5 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/70 rounded-xl space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                              <Zap className="h-3.5 w-3.5 text-amber-600" />
+                              Power Rate
+                            </span>
+                            <span className="text-[8.5px] font-black uppercase text-amber-700 bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded">
+                              {muni.values.power_rate?.source || "CAPELCO"}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline justify-between pt-0.5">
+                            <span className="text-lg font-black text-slate-900 dark:text-slate-100">
+                              ₱{powerVal !== undefined ? powerVal.toFixed(2) : "—"}
+                              <span className="text-[10px] font-semibold text-slate-400 ml-1">/ kWh</span>
+                            </span>
+                            {powerVal !== undefined && (
+                              <span className={`text-[10px] font-bold ${powerVal <= powerAvg ? "text-emerald-600" : "text-slate-500"}`}>
+                                {powerVal <= powerAvg ? `-${Math.abs(powerAvg - powerVal).toFixed(2)} vs Avg` : `+${(powerVal - powerAvg).toFixed(2)} vs Avg`}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[9.5px] text-slate-400 font-medium">Provincial Benchmark: ₱{powerAvg.toFixed(2)}/kWh</p>
+                        </div>
+
+                        {/* Water Rate Box */}
+                        <div className="p-3.5 bg-sky-50/50 dark:bg-sky-950/10 border border-sky-200/70 rounded-xl space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-sky-900 dark:text-sky-300 flex items-center gap-1.5">
+                              <Droplet className="h-3.5 w-3.5 text-sky-600" />
+                              Water Rate
+                            </span>
+                            <span className="text-[8.5px] font-black uppercase text-sky-700 bg-sky-100 dark:bg-sky-900/40 px-1.5 py-0.5 rounded">
+                              {muni.values.water_rate?.source || "MRWD"}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline justify-between pt-0.5">
+                            <span className="text-lg font-black text-slate-900 dark:text-slate-100">
+                              ₱{waterVal !== undefined ? waterVal.toFixed(2) : "—"}
+                              <span className="text-[10px] font-semibold text-slate-400 ml-1">/ cu.m</span>
+                            </span>
+                            {waterVal !== undefined && (
+                              <span className={`text-[10px] font-bold ${waterVal <= waterAvg ? "text-emerald-600" : "text-slate-500"}`}>
+                                {waterVal <= waterAvg ? `-${Math.abs(waterAvg - waterVal).toFixed(2)} vs Avg` : `+${(waterVal - waterAvg).toFixed(2)} vs Avg`}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[9.5px] text-slate-400 font-medium">Provincial Benchmark: ₱{waterAvg.toFixed(2)}/cu.m</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* AI Insights Block */}
             <div className="rounded-3xl bg-gradient-to-r from-blue-50/30 to-indigo-50/10 dark:from-slate-900/40 dark:to-slate-800/10 border border-blue-100/50 dark:border-slate-800 p-6 space-y-4 animate-in slide-in-from-bottom-2 duration-400">
               <div className="flex items-center gap-2">
@@ -653,9 +805,24 @@ export const ComparisonTool: React.FC = () => {
                           return (
                             <TableRow key={ind.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-900/10 border-b border-slate-100 dark:border-slate-800/80 transition">
                               <TableCell className="px-6 py-3.5 font-bold text-slate-800 dark:text-slate-200">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-2">
+                                  {ind.code === "power_rate" && (
+                                    <span className="p-1 rounded-md bg-amber-100 text-amber-700 shrink-0">
+                                      <Zap className="h-3 w-3" />
+                                    </span>
+                                  )}
+                                  {ind.code === "water_rate" && (
+                                    <span className="p-1 rounded-md bg-sky-100 text-sky-700 shrink-0">
+                                      <Droplet className="h-3 w-3" />
+                                    </span>
+                                  )}
                                   <span>{ind.name}</span>
                                   {ind.unit && <span className="text-[9.5px] text-slate-400 font-normal">({ind.unit})</span>}
+                                  {ind.category === "utility" && (
+                                    <span className="text-[8px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-full">
+                                      Utility
+                                    </span>
+                                  )}
                                 </div>
                               </TableCell>
                               {comparisonData.selected.map(m => {
@@ -722,6 +889,20 @@ export const ComparisonTool: React.FC = () => {
                     <div className="space-y-0.5">
                       <h5 className="text-xs font-extrabold text-slate-800 dark:text-slate-200">Bureau of Local Government Finance</h5>
                       <p className="text-[10px] text-slate-400 font-medium">LGU annual incomes and municipal financial status records. Confidence: High.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 p-2.5 rounded-2xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition duration-200">
+                    <div className="h-8 w-12 flex items-center justify-center bg-amber-100 text-amber-900 rounded-xl text-[8.5px] font-black shrink-0 border border-amber-200">CAPELCO</div>
+                    <div className="space-y-0.5">
+                      <h5 className="text-xs font-extrabold text-slate-800 dark:text-slate-200">Capiz Electric Cooperative, Inc.</h5>
+                      <p className="text-[10px] text-slate-400 font-medium">Electricity tariffs, commercial distribution charges, and power grid metrics. Confidence: High.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 p-2.5 rounded-2xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition duration-200">
+                    <div className="h-8 w-12 flex items-center justify-center bg-sky-100 text-sky-900 rounded-xl text-[8.5px] font-black shrink-0 border border-sky-200">MRWD</div>
+                    <div className="space-y-0.5">
+                      <h5 className="text-xs font-extrabold text-slate-800 dark:text-slate-200">Metro Roxas Water District / LGU Waterworks</h5>
+                      <p className="text-[10px] text-slate-400 font-medium">Potable piped water tariffs and municipal waterworks consumption rates. Confidence: High.</p>
                     </div>
                   </div>
                 </CardContent>

@@ -111,6 +111,20 @@ class IndicatorSeeder extends Seeder
                 'unit' => 'Score',
                 'description' => 'LGU infrastructure index rating score out of 100.',
             ],
+            [
+                'name' => 'Power Rate',
+                'code' => 'power_rate',
+                'category' => 'utility',
+                'unit' => 'PHP/kWh',
+                'description' => 'Average commercial and residential electricity tariff in Philippine Pesos per kilowatt-hour.',
+            ],
+            [
+                'name' => 'Water Rate',
+                'code' => 'water_rate',
+                'category' => 'utility',
+                'unit' => 'PHP/cu.m',
+                'description' => 'Average commercial and residential water consumption rate in Philippine Pesos per cubic meter.',
+            ],
         ];
 
         foreach ($indicators as $indicator) {

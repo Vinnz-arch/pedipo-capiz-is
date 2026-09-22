@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
 import { MsmeDirectoryService, type MsmeData } from "@/services/MsmeDirectoryService";
 import { 
-  ArrowLeft, 
   MapPin, 
-  Map, 
   Store, 
   Phone, 
   Mail, 
-  User, 
-  Calendar, 
   Loader2, 
   Building2, 
   ShoppingBag, 
@@ -25,7 +21,6 @@ import { notify } from "@/util/notify";
 
 export const MsmeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [msme, setMsme] = useState<MsmeData | null>(null);
   const [otherMsmes, setOtherMsmes] = useState<MsmeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -377,7 +377,7 @@ export const LandingPage: React.FC = () => {
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase">Active Opportunities</h2>
             <div className="w-12 h-1 bg-[#002B66] mx-auto rounded-full" />
             <p className="text-xs text-slate-500 tracking-wide font-medium pt-1">
-              Centralized registry of high-ROI economic developments within the Province of Capiz
+              Centralized registry of priority economic developments within the Province of Capiz
             </p>
           </div>
 
@@ -409,12 +409,12 @@ export const LandingPage: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
                       <div>
-                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">ROI Estimate</span>
-                        <span className="text-xs font-bold text-[#002B66]">{opp.roi_estimate ? `${opp.roi_estimate}%` : "0%"}</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Land Area</span>
+                        <span className="text-xs font-bold text-[#002B66]">{opp.land_area ? `${opp.land_area} Ha` : "Strategic Lot"}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Land Area</span>
-                        <span className="text-xs font-bold text-slate-700">{opp.land_area ? `${opp.land_area} Ha` : "0 Ha"}</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Sector</span>
+                        <span className="text-xs font-bold text-slate-700 truncate block">{opp.category?.name || "Priority"}</span>
                       </div>
                     </div>
                     <button 
