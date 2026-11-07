@@ -28,11 +28,17 @@ class ParentOpportunityController extends Controller
             }
         ])->latest()->get();
 
+        $standalone = Opportunity::whereNull('parent_opportunity_id')
+            ->with(['category', 'documents'])
+            ->latest()
+            ->get();
+
         $categories = Category::all();
         $municipalities = Municipality::all();
 
         return response()->json([
             'parent_opportunities' => $parents,
+            'standalone_opportunities' => $standalone,
             'categories' => $categories,
             'municipalities' => $municipalities,
         ]);

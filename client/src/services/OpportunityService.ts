@@ -99,6 +99,7 @@ export interface ParentOpportunityData {
 
 export interface ParentOpportunityResponse {
   parent_opportunities: ParentOpportunityData[];
+  standalone_opportunities?: OpportunityData[];
   categories: CategoryData[];
   municipalities?: any[];
 }

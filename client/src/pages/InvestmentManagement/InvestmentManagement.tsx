@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import MainLayout from "@/components/layout/Mainlayout";
 import { 
   Globe,
@@ -20,7 +21,8 @@ import {
   MapPin,
   Building2,
   Layers,
-  Search
+  Search,
+  Database
 } from "lucide-react";
 import { notify } from "@/util/notify";
 import { 
@@ -724,6 +726,15 @@ export const InvestmentManagement: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
+                          <Link
+                            to={`/app/dataEntry?parent=${parent.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            title="Open in Data Entry Module"
+                            className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#002B66] font-bold text-xs flex items-center gap-1.5 border border-blue-200/80 transition-all cursor-pointer shadow-2xs shrink-0"
+                          >
+                            <Database className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Data Entry</span>
+                          </Link>
                           <button
                             onClick={(e) => openOperatorsModal(parent, e)}
                             title="Annual Reports"
@@ -1456,14 +1467,23 @@ export const InvestmentManagement: React.FC = () => {
 
               {/* Footer Actions */}
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setSpreadsheetModalProject(viewingChildProject)}
-                  className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                  <span>Open Data Entry Spreadsheet</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSpreadsheetModalProject(viewingChildProject)}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                    <span>View Spreadsheet</span>
+                  </button>
+                  <Link
+                    to={`/app/dataEntry?opp=${viewingChildProject.id}`}
+                    className="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#002B66] border border-blue-200 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Database className="w-4 h-4 text-blue-600" />
+                    <span>Open in Data Entry</span>
+                  </Link>
+                </div>
 
                 <div className="flex items-center gap-2">
                   <button
@@ -1646,6 +1666,14 @@ export const InvestmentManagement: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <Link
+                    to={`/app/dataEntry?parent=${operatorsModalParent.id}`}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-1.5"
+                    title="Open in Data Entry Module"
+                  >
+                    <Database className="w-3.5 h-3.5 text-blue-200" />
+                    <span>Open in Data Entry</span>
+                  </Link>
                   <button
                     onClick={() => setOperatorsModalParent(null)}
                     className="p-2 bg-white/10 hover:bg-rose-500/80 border border-white/20 rounded-xl text-white transition-all cursor-pointer"
