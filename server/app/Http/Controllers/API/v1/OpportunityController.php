@@ -218,12 +218,20 @@ class OpportunityController extends Controller
             'headers' => 'present|array',
             'rows' => 'present|array',
             'filename' => 'nullable|string|max:255',
+            'file_path' => 'nullable|string',
+            'file_size' => 'nullable|integer',
+            'sheets' => 'nullable|array',
+            'html' => 'nullable|string',
         ]);
 
         $opportunity->spreadsheet_data = [
             'headers' => $validated['headers'],
             'rows' => $validated['rows'],
+            'sheets' => $validated['sheets'] ?? ($opportunity->spreadsheet_data['sheets'] ?? null),
+            'html' => $validated['html'] ?? ($opportunity->spreadsheet_data['html'] ?? null),
             'filename' => $validated['filename'] ?? ($opportunity->spreadsheet_data['filename'] ?? null),
+            'file_path' => $validated['file_path'] ?? ($opportunity->spreadsheet_data['file_path'] ?? null),
+            'file_size' => $validated['file_size'] ?? ($opportunity->spreadsheet_data['file_size'] ?? null),
             'updated_at' => now()->toIso8601String(),
         ];
         $opportunity->save();
@@ -237,38 +245,55 @@ class OpportunityController extends Controller
     }
 
     /**
-     * Upload a CSV spreadsheet file to populate the opportunity sheet (Admin).
+     * Upload physical spreadsheet file (.xlsx, .csv, etc.) and save preview data (Admin).
      */
     public function uploadSpreadsheet(Request $request, $id): JsonResponse
     {
         $opportunity = Opportunity::findOrFail($id);
 
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt|max:5120',
+            'file' => 'required|file|max:51200',
+            'headers' => 'nullable',
+            'rows' => 'nullable',
+            'sheets' => 'nullable',
+            'html' => 'nullable|string',
         ]);
 
         $file = $request->file('file');
-        $csvData = file_get_contents($file->getRealPath());
-        $lines = explode("\n", $csvData);
-        $headers = [];
-        $rows = [];
 
-        foreach ($lines as $index => $line) {
-            $line = trim($line);
-            if (empty($line)) continue;
-            $row = str_getcsv($line);
-
-            if ($index === 0) {
-                $headers = $row;
-            } else {
-                $rows[] = $row;
+        // Delete previous spreadsheet file if exists
+        if (!empty($opportunity->spreadsheet_data['file_path'])) {
+            $prevRelative = str_replace('/storage/', '', $opportunity->spreadsheet_data['file_path']);
+            if (Storage::disk('public')->exists($prevRelative)) {
+                Storage::disk('public')->delete($prevRelative);
             }
         }
 
+        $path = $file->store('opportunities/spreadsheets', 'public');
+        $filePath = '/storage/' . $path;
+
+        // Decode JSON inputs if passed as strings in FormData
+        $headers = is_string($request->input('headers')) 
+            ? json_decode($request->input('headers'), true) 
+            : ($request->input('headers') ?? []);
+
+        $rows = is_string($request->input('rows')) 
+            ? json_decode($request->input('rows'), true) 
+            : ($request->input('rows') ?? []);
+
+        $sheets = is_string($request->input('sheets')) 
+            ? json_decode($request->input('sheets'), true) 
+            : ($request->input('sheets') ?? []);
+
         $opportunity->spreadsheet_data = [
-            'headers' => $headers,
-            'rows' => $rows,
+            'file_path' => $filePath,
             'filename' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+            'headers' => $headers ?? [],
+            'rows' => $rows ?? [],
+            'sheets' => $sheets ?? [],
+            'html' => $request->input('html'),
+            'updated_at' => now()->toIso8601String(),
             'uploaded_at' => now()->toIso8601String(),
         ];
         $opportunity->save();
@@ -276,8 +301,34 @@ class OpportunityController extends Controller
         Cache::forget('public_opportunities');
 
         return response()->json([
-            'message' => 'Spreadsheet file uploaded and parsed successfully.',
+            'message' => 'Spreadsheet file uploaded and stored successfully.',
             'spreadsheet_data' => $opportunity->spreadsheet_data,
+        ]);
+    }
+
+    /**
+     * Remove / clear spreadsheet data for an opportunity (Admin).
+     */
+    public function deleteSpreadsheet($id): JsonResponse
+    {
+        $opportunity = Opportunity::findOrFail($id);
+
+        // Delete stored file if exists
+        if (!empty($opportunity->spreadsheet_data['file_path'])) {
+            $prevRelative = str_replace('/storage/', '', $opportunity->spreadsheet_data['file_path']);
+            if (Storage::disk('public')->exists($prevRelative)) {
+                Storage::disk('public')->delete($prevRelative);
+            }
+        }
+
+        $opportunity->spreadsheet_data = null;
+        $opportunity->save();
+
+        Cache::forget('public_opportunities');
+
+        return response()->json([
+            'message' => 'Spreadsheet data removed successfully.',
+            'spreadsheet_data' => null,
         ]);
     }
 
@@ -373,12 +424,47 @@ class OpportunityController extends Controller
         $fullPath = Storage::disk('public')->path($relativePath);
         $mimeType = File::mimeType($fullPath) ?: 'application/octet-stream';
 
+        $isDownload = request()->boolean('download') || request()->query('download') === '1' || request()->query('download') === 'true';
+        $disposition = $isDownload ? 'attachment' : 'inline';
+
         return response()->file($fullPath, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+            'Content-Disposition' => "{$disposition}; filename=\"{$document->file_name}\"",
             'Access-Control-Allow-Origin' => '*',
             'Access-Control-Allow-Methods' => 'GET, OPTIONS',
             'Access-Control-Allow-Headers' => '*',
+            'Access-Control-Expose-Headers' => 'Content-Disposition, Content-Type, Content-Length',
+        ]);
+    }
+
+    /**
+     * Download the exact uploaded spreadsheet file for an opportunity.
+     */
+    public function downloadSpreadsheet($id)
+    {
+        $opportunity = Opportunity::findOrFail($id);
+        $spreadsheetData = $opportunity->spreadsheet_data ?? [];
+        $filePath = $spreadsheetData['file_path'] ?? null;
+        $filename = $spreadsheetData['filename'] ?? ($opportunity->project_name . '.xlsx');
+
+        if (!$filePath) {
+            return response()->json(['message' => 'No spreadsheet file attached to this opportunity.'], 404);
+        }
+
+        $relativePath = str_replace('/storage/', '', $filePath);
+        if (!Storage::disk('public')->exists($relativePath)) {
+            return response()->json(['message' => 'Spreadsheet file not found on server.'], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($relativePath);
+        $mimeType = Storage::disk('public')->mimeType($relativePath) ?: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+        return response()->download($fullPath, $filename, [
+            'Content-Type' => $mimeType,
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+            'Access-Control-Allow-Headers' => '*',
+            'Access-Control-Expose-Headers' => 'Content-Disposition',
         ]);
     }
 }

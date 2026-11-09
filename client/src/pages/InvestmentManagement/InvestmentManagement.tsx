@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import MainLayout from "@/components/layout/Mainlayout";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { 
   Globe,
   Eye, 
@@ -33,8 +34,9 @@ import {
   type OpportunityDocumentData,
   type ParentOpportunityDocumentData,
   formatDocFileSize,
-  resolveDocUrl,
-  resolveParentDocUrl
+  downloadAnnualReportBlob,
+  downloadDocumentBlob,
+  resolveAnnualReportUrl
 } from "@/services/OpportunityService";
 import { SpreadsheetGrid } from "@/components/spreadsheet/SpreadsheetGrid";
 import { DocumentViewerModal } from "@/components/documents/DocumentViewerModal";
@@ -394,8 +396,23 @@ export const InvestmentManagement: React.FC = () => {
     }
   };
 
-  const handleDownloadAnnualReportFile = (report: any) => {
+  const handleDownloadAnnualReportFile = async (report: any) => {
     if (!report) return;
+    if (operatorsModalParent) {
+      try {
+        const filename = await downloadAnnualReportBlob(operatorsModalParent.id, report);
+        notify.success("Download Complete", `Downloaded ${filename}`);
+        return;
+      } catch (err: any) {
+        console.warn("Direct blob download failed, trying fallback url:", err);
+        if (report.file_path) {
+          const url = resolveAnnualReportUrl(operatorsModalParent.id, report);
+          window.open(url, "_blank");
+          return;
+        }
+      }
+    }
+
     if (report.file_path) {
       const url = report.file_path.startsWith("http")
         ? report.file_path
@@ -691,10 +708,7 @@ export const InvestmentManagement: React.FC = () => {
 
             {/* Parent Opportunities Grid */}
             {isLoading ? (
-              <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-400">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
-                <p className="text-xs font-semibold">Loading investment opportunity groups...</p>
-              </div>
+              <LoadingState variant="card" message="Loading investment opportunity groups..." />
             ) : filteredParents.length === 0 ? (
               <div className="bg-white p-12 rounded-2xl border border-dashed border-slate-200 text-center space-y-3">
                 <Layers className="w-10 h-10 text-slate-300 mx-auto" />
@@ -737,11 +751,11 @@ export const InvestmentManagement: React.FC = () => {
                           </Link>
                           <button
                             onClick={(e) => openOperatorsModal(parent, e)}
-                            title="Annual Reports"
+                            title="Overview & Reports"
                             className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1.5 border border-emerald-200/80 transition-all cursor-pointer shadow-2xs group/btn shrink-0"
                           >
-                            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 group-hover/btn:scale-110 transition-transform" />
-                            <span>Annual Reports</span>
+                            <Layers className="w-3.5 h-3.5 text-emerald-600 group-hover/btn:scale-110 transition-transform" />
+                            <span>Overview & Reports</span>
                           </button>
                           <button
                             onClick={(e) => {
@@ -871,11 +885,11 @@ export const InvestmentManagement: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   onClick={() => openOperatorsModal(activeParentView)}
-                  title="Annual Reports"
+                  title="Overview & Reports"
                   className="px-3.5 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-2xs group"
                 >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-                  <span>Annual Reports</span>
+                  <Layers className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                  <span>Overview & Reports</span>
                 </button>
                 <button
                   onClick={() => openCreateChildModal(activeParentView)}
@@ -1446,16 +1460,14 @@ export const InvestmentManagement: React.FC = () => {
                                 <Eye className="w-3 h-3" />
                                 <span>View</span>
                               </button>
-                              <a
-                                href={resolveDocUrl(doc.file_path, doc)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
+                              <button
+                                type="button"
+                                onClick={() => downloadDocumentBlob(doc)}
                                 className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
                                 title="Download Document"
                               >
                                 <Download className="w-3 h-3" />
-                              </a>
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -1601,39 +1613,19 @@ export const InvestmentManagement: React.FC = () => {
         {spreadsheetModalProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/75 backdrop-blur-xs animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden w-full max-w-6xl h-[90vh]">
-              <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                    <FileSpreadsheet className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-900">
-                      Feasibility & Data Sheet: {spreadsheetModalProject.project_name}
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      {spreadsheetModalProject.location || spreadsheetModalProject.municipality?.name || "Capiz"} • Administrator Live Editor Mode
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSpreadsheetModalProject(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-hidden p-4">
-                <SpreadsheetGrid
-                  opportunityId={spreadsheetModalProject.id}
-                  opportunityName={spreadsheetModalProject.project_name}
-                  isAdmin={true}
-                  onClose={() => setSpreadsheetModalProject(null)}
-                  onSaved={() => {
-                    loadData();
-                  }}
-                />
-              </div>
+              <SpreadsheetGrid
+                opportunityId={spreadsheetModalProject.id}
+                opportunityName={spreadsheetModalProject.project_name}
+                categoryName={spreadsheetModalProject.category?.name || "Priority Project"}
+                locationName={spreadsheetModalProject.location || spreadsheetModalProject.municipality?.name || "Capiz"}
+                sheetTitle="Feasibility & Project Data Sheet"
+                isAdmin={true}
+                uploadOnly={true}
+                onClose={() => setSpreadsheetModalProject(null)}
+                onSaved={() => {
+                  loadData();
+                }}
+              />
             </div>
           </div>
         )}
@@ -1648,7 +1640,7 @@ export const InvestmentManagement: React.FC = () => {
               <div className="px-6 py-4 bg-gradient-to-r from-[#002B66] to-[#003882] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-300 font-bold shrink-0">
-                    <FileSpreadsheet className="w-5 h-5 text-emerald-300" />
+                    <Layers className="w-5 h-5 text-emerald-300" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -1660,7 +1652,7 @@ export const InvestmentManagement: React.FC = () => {
                       </span>
                     </div>
                     <h2 className="text-base font-extrabold tracking-tight mt-0.5">
-                      Annual Reports: {operatorsModalParent.name}
+                      Overview & Reports: {operatorsModalParent.name}
                     </h2>
                   </div>
                 </div>
@@ -1933,16 +1925,14 @@ export const InvestmentManagement: React.FC = () => {
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
-                              <a
-                                href={resolveParentDocUrl(doc.file_path, doc)}
-                                download
-                                target="_blank"
-                                rel="noreferrer"
+                              <button
+                                type="button"
+                                onClick={() => downloadDocumentBlob(doc)}
                                 title="Download Document"
                                 className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
                               >
                                 <Download className="w-3.5 h-3.5" />
-                              </a>
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteOperatorsDoc(doc.id)}

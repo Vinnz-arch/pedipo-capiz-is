@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainLayout from "@/components/layout/Mainlayout";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -332,14 +333,7 @@ const ManageUsers = () => {
                     </tr>
                   )}
                   {isLoading && (
-                    <tr>
-                      <td colSpan={5} className="p-4 text-center">
-                        <div className="flex justify-center items-center gap-2">
-                          <Icons.Loader2 className="h-5 w-5 animate-spin text-primary" />
-                          <span className="text-sm text-muted-foreground">Loading users...</span>
-                        </div>
-                      </td>
-                    </tr>
+                    <LoadingState variant="table" colSpan={5} message="Loading users..." />
                   )}
                 </tbody>
               </table>
@@ -590,12 +584,7 @@ const ManageUsers = () => {
                                     </thead>
                                     <tbody>
                                         {isLoadingLogs ? (
-                                            <tr>
-                                                <td colSpan={3} className="p-4 text-center">
-                                                    <Icons.Loader2 className="h-4 w-4 animate-spin inline mr-2 text-primary" />
-                                                    Loading logs...
-                                                </td>
-                                            </tr>
+                                            <LoadingState variant="table" colSpan={3} message="Loading logs..." />
                                         ) : userLogs.length > 0 ? (
                                             userLogs.map((log) => (
                                                 <tr key={log.id} className="border-b last:border-0 hover:bg-muted/40 transition-colors">

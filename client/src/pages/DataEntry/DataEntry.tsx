@@ -19,12 +19,14 @@ import {
   AlertCircle,
   FolderGit2,
   Table,
-  MoveRight
+  MoveRight,
+  Trash2
 } from "lucide-react";
-import * as XLSX from "xlsx";
 import { notify } from "@/util/notify";
 import { ApiHandler } from "@/api/ApiHandler";
+import { parseExcelToHighFidelity } from "@/util/excelRenderer";
 import MainLayout from "@/components/layout/Mainlayout";
+import { LoadingState } from "@/components/ui/LoadingState";
 import {
   OpportunityService,
   type ParentOpportunityData,
@@ -158,48 +160,33 @@ export const DataEntry: React.FC = () => {
     }));
   };
 
-  // Helper to parse spreadsheet file (.xlsx, .xls, .csv)
+  // Helper to parse spreadsheet file (.xlsx, .xls, .csv) with high-fidelity formatting using ExcelJS
   const parseSpreadsheetFile = async (
     file: File
-  ): Promise<{ headers: string[]; rows: string[][] } | null> => {
+  ): Promise<{
+    headers: string[];
+    rows: string[][];
+    sheets: { name: string; html: string }[];
+    html: string;
+  } | null> => {
     const fileExt = file.name.split(".").pop()?.toLowerCase() || "";
     if (!["csv", "xlsx", "xls"].includes(fileExt)) {
       notify.error("Invalid File Type", "Please upload a valid spreadsheet file (.xlsx, .xls, or .csv).");
       return null;
     }
 
-    const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: "array" });
-    const firstSheetName = workbook.SheetNames[0];
-    if (!firstSheetName) {
-      notify.error("Empty Workbook", "The uploaded spreadsheet workbook contains no readable sheets.");
+    try {
+      const parsed = await parseExcelToHighFidelity(file);
+      if (!parsed.sheets || parsed.sheets.length === 0) {
+        notify.error("Empty Workbook", "The uploaded spreadsheet workbook contains no readable sheets.");
+        return null;
+      }
+      return parsed;
+    } catch (err: any) {
+      console.error("Failed to parse spreadsheet file:", err);
+      notify.error("Parse Error", err.message || "Failed to process spreadsheet file.");
       return null;
     }
-
-    const worksheet = workbook.Sheets[firstSheetName];
-    const jsonData: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-    if (!jsonData || jsonData.length === 0) {
-      notify.error("Empty Spreadsheet", "The uploaded sheet has no rows.");
-      return null;
-    }
-
-    const headerIdx = jsonData.findIndex((r) => r && r.some((c: any) => String(c).trim() !== ""));
-    if (headerIdx === -1) {
-      notify.error("Empty Spreadsheet", "No header row found in the uploaded file.");
-      return null;
-    }
-
-    const rawHeaders = jsonData[headerIdx];
-    const extractedHeaders = rawHeaders.map((h: any, i: number) => String(h || "").trim() || `Column ${i + 1}`);
-
-    const extractedRows = jsonData
-      .slice(headerIdx + 1)
-      .filter((r) => r && r.some((c: any) => String(c).trim() !== ""))
-      .map((r) =>
-        extractedHeaders.map((_, colIdx) => (r[colIdx] !== undefined && r[colIdx] !== null ? String(r[colIdx]).trim() : ""))
-      );
-
-    return { headers: extractedHeaders, rows: extractedRows };
   };
 
   // Upload spreadsheet directly to Parent Opportunity (Annual Reports / Sector Data)
@@ -221,6 +208,8 @@ export const DataEntry: React.FC = () => {
       await ApiHandler.put(`/v1/parent-opportunities/${parent.id}/operators-and-production`, {
         headers: parsed.headers,
         rows: parsed.rows,
+        sheets: parsed.sheets,
+        html: parsed.html,
         filename: file.name,
         data_year: String(new Date().getFullYear()),
       });
@@ -257,11 +246,14 @@ export const DataEntry: React.FC = () => {
       const parsed = await parseSpreadsheetFile(file);
       if (!parsed) return;
 
-      await ApiHandler.put(`/v1/opportunities/${opp.id}/spreadsheet`, {
-        headers: parsed.headers,
-        rows: parsed.rows,
-        filename: file.name,
-      });
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("headers", JSON.stringify(parsed.headers));
+      formData.append("rows", JSON.stringify(parsed.rows));
+      formData.append("sheets", JSON.stringify(parsed.sheets));
+      formData.append("html", parsed.html || "");
+
+      await OpportunityService.uploadOpportunitySpreadsheet(opp.id, formData);
 
       notify.success(
         "Project Data Sheet Uploaded",
@@ -274,6 +266,45 @@ export const DataEntry: React.FC = () => {
     } finally {
       setUploadingKey(null);
       e.target.value = "";
+    }
+  };
+
+  // Delete / Clear Child Opportunity Spreadsheet
+  const handleDeleteChildSpreadsheet = async (opp: OpportunityData) => {
+    const filename = opp.spreadsheet_data?.filename || "spreadsheet";
+    if (
+      !window.confirm(
+        `Are you sure you want to remove the data sheet "${filename}" from "${opp.project_name}"?\n\nThis will completely detach the file and reset it to "No Sheet".`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await OpportunityService.deleteOpportunitySpreadsheet(opp.id);
+      await loadData();
+    } catch (err: any) {
+      console.error("Failed to delete child spreadsheet:", err);
+      notify.error("Delete Failed", err.message || "Could not remove data sheet.");
+    }
+  };
+
+  // Delete / Clear Parent Opportunity Master Spreadsheet
+  const handleDeleteParentSpreadsheet = async (parent: ParentOpportunityData) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to remove the master sector spreadsheet from "${parent.name}"?\n\nThis will clear the attached annual reports and reset it to "No Sector Sheet".`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await OpportunityService.deleteParentOperatorsSpreadsheet(parent.id);
+      await loadData();
+    } catch (err: any) {
+      console.error("Failed to delete parent spreadsheet:", err);
+      notify.error("Delete Failed", err.message || "Could not remove sector sheet.");
     }
   };
 
@@ -551,10 +582,7 @@ export const DataEntry: React.FC = () => {
         {viewMode === "grouped" && (
           <div className="space-y-4">
             {isLoading ? (
-              <div className="p-16 text-center text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
-                <span>Loading synchronized opportunity groups...</span>
-              </div>
+              <LoadingState variant="card" message="Loading synchronized opportunity groups..." />
             ) : filteredParents.length === 0 ? (
               <div className="p-16 text-center text-slate-400 text-xs space-y-3 bg-white rounded-2xl border border-slate-200">
                 <Building2 className="w-10 h-10 mx-auto text-slate-300" />
@@ -672,7 +700,7 @@ export const DataEntry: React.FC = () => {
 
                         {/* Upload Sector Sheet Button */}
                         <label
-                          title="Upload Sector Master Spreadsheet (.xlsx, .xls, .csv)"
+                          title="Upload an Excel or CSV file to this sector's Annual Reports collection"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold rounded-lg text-xs shadow-2xs transition-all cursor-pointer shrink-0"
                         >
                           {parentUploading ? (
@@ -680,7 +708,7 @@ export const DataEntry: React.FC = () => {
                           ) : (
                             <Upload className="w-3.5 h-3.5 text-emerald-600" />
                           )}
-                          <span>{hasParentSheet ? "Replace Master Sheet" : "Upload Master Sheet"}</span>
+                          <span>{hasParentSheet ? "Add Annual Report" : "Upload Annual Report"}</span>
                           <input
                             type="file"
                             accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
@@ -690,28 +718,22 @@ export const DataEntry: React.FC = () => {
                           />
                         </label>
 
-                        {/* View Sector Sheet Button */}
-                        <button
-                          onClick={() =>
-                            setActiveSpreadsheet({
-                              id: parent.id,
-                              name: `${parent.name} - Sector Annual Reports`,
-                              categoryName: parent.category?.name,
-                              locationName: "Capiz Sector-wide",
-                              isParentOpportunity: true,
-                              initialYear: parent.data_year,
-                            })
-                          }
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#002B66] hover:bg-[#003882] text-white font-bold rounded-lg text-xs shadow-xs transition-all cursor-pointer shrink-0"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View Sheet</span>
-                        </button>
+                        {/* Remove Sector Reports Button */}
+                        {hasParentSheet && (
+                          <button
+                            onClick={() => handleDeleteParentSpreadsheet(parent)}
+                            title="Remove all uploaded annual reports from this sector"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg text-xs shadow-2xs transition-all cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                            <span className="hidden sm:inline">Remove</span>
+                          </button>
+                        )}
 
                         {/* Manage in Investment Management Link */}
                         <Link
                           to={PATHS.APP.MANAGE_INVESTMENT_MANAGEMENT}
-                          title="Open this group in Investment Management"
+                          title="View, download, and manage individual annual report files in Investment Management"
                           className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-blue-700 rounded-lg transition-colors cursor-pointer border border-slate-200"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
@@ -870,6 +892,18 @@ export const DataEntry: React.FC = () => {
                                             <Eye className="w-3.5 h-3.5" />
                                             <span>View</span>
                                           </button>
+
+                                          {/* Remove Sheet Button */}
+                                          {hasChildSheet && (
+                                            <button
+                                              onClick={() => handleDeleteChildSpreadsheet(child)}
+                                              title="Remove / Clear Attached Data Sheet"
+                                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg text-xs shadow-2xs transition-all cursor-pointer shrink-0"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                              <span className="hidden sm:inline">Remove</span>
+                                            </button>
+                                          )}
                                         </div>
                                       </td>
                                     </tr>
@@ -1021,6 +1055,18 @@ export const DataEntry: React.FC = () => {
                                   <Eye className="w-3.5 h-3.5" />
                                   <span>View</span>
                                 </button>
+
+                                {/* Remove Sheet Button */}
+                                {Boolean(opp.spreadsheet_data?.headers && opp.spreadsheet_data.headers.length > 0) && (
+                                  <button
+                                    onClick={() => handleDeleteChildSpreadsheet(opp)}
+                                    title="Remove / Clear Attached Data Sheet"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg text-xs shadow-2xs transition-all cursor-pointer shrink-0"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                    <span className="hidden sm:inline">Remove</span>
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -1199,6 +1245,18 @@ export const DataEntry: React.FC = () => {
                                 <Eye className="w-3.5 h-3.5" />
                                 <span>View Sheet</span>
                               </button>
+
+                              {/* Remove Sheet Button */}
+                              {hasSheet && (
+                                <button
+                                  onClick={() => handleDeleteChildSpreadsheet(child)}
+                                  title="Remove / Clear Attached Data Sheet"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg text-xs shadow-2xs transition-all cursor-pointer shrink-0"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                  <span>Remove</span>
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1222,6 +1280,7 @@ export const DataEntry: React.FC = () => {
                 opportunityName={activeSpreadsheet.name}
                 categoryName={activeSpreadsheet.categoryName}
                 locationName={activeSpreadsheet.locationName}
+                sheetTitle={activeSpreadsheet.isParentOpportunity ? "Annual Reports & Sector Sheet" : "Feasibility & Project Data Sheet"}
                 isAdmin={true}
                 uploadOnly={true}
                 isParentOpportunity={activeSpreadsheet.isParentOpportunity}

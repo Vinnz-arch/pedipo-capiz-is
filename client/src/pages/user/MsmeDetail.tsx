@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
 import { MsmeDirectoryService, type MsmeData } from "@/services/MsmeDirectoryService";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { 
   MapPin, 
   Store, 
   Phone, 
   Mail, 
-  Loader2, 
   Building2, 
   ShoppingBag, 
   ExternalLink,
@@ -127,10 +127,7 @@ export const MsmeDetail: React.FC = () => {
   if (isLoading) {
     return (
       <ClientMainLayout>
-        <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-          <span className="text-xs font-bold text-slate-500">Loading business profile...</span>
-        </div>
+        <LoadingState message="Loading business profile..." className="min-h-[50vh]" />
       </ClientMainLayout>
     );
   }

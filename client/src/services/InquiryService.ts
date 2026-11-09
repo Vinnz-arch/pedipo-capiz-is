@@ -19,7 +19,17 @@ export interface InquiryData {
   letter_of_intent?: string;
   supporting_documents?: string;
   message: string;
-  status: "Pending" | "Under Review" | "Approved" | "Rejected" | "Responded";
+  status:
+    | "Submitted"
+    | "Pending"
+    | "Under Review"
+    | "Endorsed"
+    | "Assistance Identified"
+    | "Processing"
+    | "Completed"
+    | "Approved"
+    | "Responded"
+    | "Rejected";
   admin_notes?: string;
   reviewed_at?: string;
   created_at?: string;

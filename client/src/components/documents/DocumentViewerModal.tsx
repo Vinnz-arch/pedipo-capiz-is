@@ -13,7 +13,8 @@ import mammoth from "mammoth";
 import { 
   type OpportunityDocumentData, 
   formatDocFileSize, 
-  resolveDocUrl 
+  resolveDocUrl,
+  downloadDocumentBlob
 } from "@/services/OpportunityService";
 
 interface DocumentViewerModalProps {
@@ -154,17 +155,15 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Download Button */}
-            <a
-              href={fileUrl}
-              download={doc.file_name}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 text-slate-600 hover:text-[#002B66] hover:bg-slate-200 rounded-xl transition flex items-center gap-1.5 text-xs font-bold"
+            <button
+              type="button"
+              onClick={() => downloadDocumentBlob(doc)}
+              className="p-2 text-slate-600 hover:text-[#002B66] hover:bg-slate-200 rounded-xl transition flex items-center gap-1.5 text-xs font-bold cursor-pointer"
               title="Download copy to device"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Download</span>
-            </a>
+            </button>
 
             {/* Fullscreen Toggle */}
             <button

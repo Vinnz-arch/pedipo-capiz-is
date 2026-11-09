@@ -1,4 +1,5 @@
 import { ApiHandler } from "@/api/ApiHandler";
+import AxiosInstance from "@/api/AxiosIntance";
 
 export interface CategoryData {
   id: number;
@@ -136,6 +137,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Update an existing parent opportunity.
    */
@@ -155,6 +157,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Delete a parent opportunity.
    */
@@ -164,6 +167,7 @@ export const OpportunityService = {
       "Parent opportunity removed!"
     );
   },
+
 
   /**
    * Add a child project under a parent opportunity.
@@ -175,6 +179,7 @@ export const OpportunityService = {
       "Project added to opportunity!"
     );
   },
+
 
   /**
    * Update a child project.
@@ -190,6 +195,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Move a child project to a different parent opportunity.
    */
@@ -201,6 +207,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Delete a child project.
    */
@@ -211,6 +218,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Get overall operators and production data for a parent opportunity.
    */
@@ -219,6 +227,7 @@ export const OpportunityService = {
       `/v1/parent-opportunities/${parentId}/operators-and-production`
     );
   },
+
 
   /**
    * Update overall operators and production spreadsheet and data year.
@@ -237,6 +246,7 @@ export const OpportunityService = {
       "Operators and production data updated!"
     );
   },
+
 
   /**
    * Upload one or multiple annual report spreadsheet files for parent opportunity.
@@ -262,6 +272,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Delete a specific annual report file for parent opportunity.
    */
@@ -279,6 +290,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Delete / clear all annual report spreadsheets for parent opportunity.
    */
@@ -292,6 +304,37 @@ export const OpportunityService = {
       "Annual report spreadsheets removed!"
     );
   },
+
+  /**
+   * Upload physical spreadsheet file (.xlsx, .csv) with high-fidelity preview payload for child opportunity.
+   */
+  uploadOpportunitySpreadsheet: async (
+    opportunityId: number | string,
+    formData: FormData
+  ) => {
+    return await ApiHandler.post<{
+      message: string;
+      spreadsheet_data: any;
+    }>(
+      `/v1/opportunities/${opportunityId}/spreadsheet/upload`,
+      formData,
+      "Project data sheet uploaded successfully!"
+    );
+  },
+
+  /**
+   * Delete / clear spreadsheet data for a child opportunity.
+   */
+  deleteOpportunitySpreadsheet: async (opportunityId: number | string) => {
+    return await ApiHandler.delete<{
+      message: string;
+      spreadsheet_data: any;
+    }>(
+      `/v1/opportunities/${opportunityId}/spreadsheet`,
+      "Data sheet removed successfully!"
+    );
+  },
+
 
   /**
    * Upload an overall document for parent opportunity.
@@ -308,6 +351,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Delete a parent opportunity document.
    */
@@ -320,6 +364,7 @@ export const OpportunityService = {
       "Document deleted successfully!"
     );
   },
+
 
   /**
    * Fetch all opportunities and categories from backend API.
@@ -339,6 +384,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Update an existing opportunity in the database.
    */
@@ -354,6 +400,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Delete an opportunity from the database.
    */
@@ -363,6 +410,7 @@ export const OpportunityService = {
       "Opportunity deleted successfully!"
     );
   },
+
 
   /**
    * Synchronize published opportunities to the Capiz Investor Portal.
@@ -374,6 +422,7 @@ export const OpportunityService = {
       "Investor Portal synchronized successfully!"
     );
   },
+
 
   /**
    * Upload an attachment document for an opportunity.
@@ -390,6 +439,7 @@ export const OpportunityService = {
     );
   },
 
+
   /**
    * Delete an attached document.
    */
@@ -402,6 +452,7 @@ export const OpportunityService = {
       "Document deleted successfully!"
     );
   },
+
 };
 
 export const formatDocFileSize = (bytes?: number): string => {
@@ -428,6 +479,84 @@ export const resolveDocUrl = (path?: string, doc?: OpportunityDocumentData | Par
 
 export const resolveParentDocUrl = (path?: string, doc?: ParentOpportunityDocumentData | null): string => {
   return resolveDocUrl(path, doc);
+};
+
+export const resolveAnnualReportUrl = (parentOpportunityId: number | string, report: AnnualReportFile | any): string => {
+  const fileIdentifier = report?.id || report?.filename;
+  if (!parentOpportunityId || !fileIdentifier) return "#";
+  return `http://localhost:8000/api/v1/parent-opportunities/${parentOpportunityId}/annual-reports/${encodeURIComponent(fileIdentifier)}/download`;
+};
+
+export const downloadAnnualReportBlob = async (parentOpportunityId: number | string, report: AnnualReportFile | any) => {
+  const fileIdentifier = report?.id || report?.filename;
+  const endpoint = `/v1/parent-opportunities/${parentOpportunityId}/annual-reports/${encodeURIComponent(fileIdentifier)}/download`;
+  const response = await AxiosInstance.get(endpoint, { responseType: "blob" });
+
+  let filename = report?.filename || "Annual_Report.xlsx";
+  const disposition = response.headers?.["content-disposition"];
+  if (disposition && typeof disposition === "string") {
+    const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (filenameMatch && filenameMatch[1]) {
+      filename = filenameMatch[1].replace(/['"]/g, "").trim();
+    }
+  }
+
+  const mimeType = typeof response.headers?.["content-type"] === "string"
+    ? response.headers["content-type"]
+    : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+  const blob = new Blob([response.data], { type: mimeType });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+  return filename;
+};
+
+export const downloadDocumentBlob = async (doc: OpportunityDocumentData | ParentOpportunityDocumentData | any): Promise<string> => {
+  const rawUrl = resolveDocUrl(doc?.file_path, doc);
+  const downloadUrl = rawUrl.includes("?") ? `${rawUrl}&download=1` : `${rawUrl}?download=1`;
+  
+  let defaultFilename = doc?.file_name || doc?.title || "document";
+  if (!defaultFilename.includes(".") && doc?.file_path) {
+    const ext = doc.file_path.split(".").pop();
+    if (ext) defaultFilename = `${defaultFilename}.${ext}`;
+  }
+
+  try {
+    const response = await fetch(downloadUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}`);
+    }
+
+    let filename = defaultFilename;
+    const disposition = response.headers.get("content-disposition");
+    if (disposition) {
+      const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, "").trim();
+      }
+    }
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+    return filename;
+  } catch (err) {
+    console.warn("Direct blob download failed, falling back to direct navigation:", err);
+    window.open(downloadUrl, "_blank");
+    return defaultFilename;
+  }
 };
 
 export default OpportunityService;

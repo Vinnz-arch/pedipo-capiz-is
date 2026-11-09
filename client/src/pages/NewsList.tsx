@@ -4,10 +4,10 @@ import {
   Calendar, 
   User, 
   ChevronRight, 
-  ArrowLeft,
-  Loader2
+  ArrowLeft
 } from "lucide-react";
 import { NewsService, type NewsArticleData } from "@/services/NewsService";
+import { LoadingState } from "@/components/ui/LoadingState";
 import logo from "../assets/logo.jpg";
 
 export const NewsList: React.FC = () => {
@@ -51,10 +51,7 @@ export const NewsList: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-[#002B66] animate-spin" />
-          <p className="text-sm font-semibold text-slate-500">Loading Latest News...</p>
-        </div>
+        <LoadingState message="Loading Latest News..." />
       </div>
     );
   }

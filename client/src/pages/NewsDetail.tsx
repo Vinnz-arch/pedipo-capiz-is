@@ -9,6 +9,7 @@ import {
   Loader2
 } from "lucide-react";
 import { NewsService, type NewsArticleData } from "@/services/NewsService";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { notify } from "@/util/notify";
 import logo from "../assets/logo.jpg";
 
@@ -97,10 +98,7 @@ export const NewsDetail: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-[#002B66] animate-spin" />
-          <p className="text-sm font-semibold text-slate-500">Loading Article Details...</p>
-        </div>
+        <LoadingState message="Loading Article Details..." />
       </div>
     );
   }

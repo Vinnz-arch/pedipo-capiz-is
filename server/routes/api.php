@@ -17,6 +17,7 @@ use App\Http\Controllers\API\v1\AdminManualUploadController;
 use App\Http\Controllers\API\v1\AdminDashboardController;
 use App\Http\Controllers\API\v1\MsmeController;
 use App\Http\Controllers\API\v1\ParentOpportunityController;
+use App\Http\Controllers\API\v1\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -32,11 +33,17 @@ Route::get('/v1/portal/parent-opportunities', [ParentOpportunityController::clas
 Route::get('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'show']);
 Route::get('/v1/parent-opportunities/{id}/operators-and-production', [ParentOpportunityController::class, 'getOperatorsAndProduction']);
 Route::get('/v1/portal/parent-opportunities/{id}/operators-and-production', [ParentOpportunityController::class, 'getOperatorsAndProduction']);
+Route::get('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet/download', [ParentOpportunityController::class, 'downloadSpreadsheet']);
+Route::get('/v1/portal/parent-opportunities/{id}/operators-and-production/spreadsheet/download', [ParentOpportunityController::class, 'downloadSpreadsheet']);
+Route::get('/v1/parent-opportunities/{id}/annual-reports/{fileId}/download', [ParentOpportunityController::class, 'downloadAnnualReportFile']);
+Route::get('/v1/portal/parent-opportunities/{id}/annual-reports/{fileId}/download', [ParentOpportunityController::class, 'downloadAnnualReportFile']);
 Route::get('/v1/parent-opportunities/{id}/documents/{documentId}/file', [ParentOpportunityController::class, 'streamDocument']);
 
 Route::get('/v1/opportunities', [OpportunityController::class, 'index']);
 Route::get('/v1/portal/opportunities', [OpportunityController::class, 'publicOpportunities']);
 Route::get('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'getSpreadsheet']);
+Route::get('/v1/opportunities/{id}/spreadsheet/download', [OpportunityController::class, 'downloadSpreadsheet']);
+Route::get('/v1/portal/opportunities/{id}/spreadsheet/download', [OpportunityController::class, 'downloadSpreadsheet']);
 Route::get('/v1/opportunities/{id}/documents', [OpportunityController::class, 'getDocuments']);
 Route::get('/v1/opportunities/{id}/documents/{documentId}/file', [OpportunityController::class, 'streamDocument']);
 Route::post('/v1/portal/inquiries', [InquiryController::class, 'store']);
@@ -69,6 +76,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/v1/logout', [AuthController::class, 'logout']);
     Route::post('/v1/user/logout', [UserAuthController::class, 'logout']);
 
+    // In-App Notifications
+    Route::get('/v1/notifications', [NotificationController::class, 'index']);
+    Route::patch('/v1/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('/v1/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/v1/notifications/{id}', [NotificationController::class, 'destroy']);
+
     // Users CRUD
     Route::apiResource('/v1/users', UserController::class);
     Route::get('/v1/users/{user}/logs', [UserLogController::class, 'index']);
@@ -99,6 +112,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/v1/opportunities/{opportunity}', [OpportunityController::class, 'update']); // for multipart form-data
     Route::delete('/v1/opportunities/{opportunity}', [OpportunityController::class, 'destroy']);
     Route::put('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'updateSpreadsheet']);
+    Route::delete('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'deleteSpreadsheet']);
     Route::post('/v1/opportunities/{id}/spreadsheet/upload', [OpportunityController::class, 'uploadSpreadsheet']);
     Route::post('/v1/opportunities/{id}/documents', [OpportunityController::class, 'uploadDocument']);
     Route::delete('/v1/opportunities/{id}/documents/{documentId}', [OpportunityController::class, 'deleteDocument']);

@@ -11,6 +11,7 @@ class Inquiry extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'opportunity_id',
         'investor_name',
         'email',
@@ -30,6 +31,14 @@ class Inquiry extends Model
     protected $casts = [
         'reviewed_at' => 'datetime',
     ];
+
+    /**
+     * Get the user associated with the inquiry (if submitted by an authenticated client).
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     /**
      * Get the opportunity associated with the inquiry.

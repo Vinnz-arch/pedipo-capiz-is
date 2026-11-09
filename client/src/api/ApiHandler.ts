@@ -50,6 +50,20 @@ export const ApiHandler = {
   },
 
   /**
+   * Perform a PATCH request.
+   */
+  patch: async <T>(url: string, data?: any, successMsg?: string) => {
+    try {
+      const response = await AxiosInstance.patch<T>(url, data);
+      if (successMsg) notify.success("Success", successMsg);
+      return response.data;
+    } catch (error: any) {
+      handleApiError(error);
+      throw error;
+    }
+  },
+
+  /**
    * Perform a DELETE request.
    */
   delete: async <T>(url: string, successMsg?: string) => {

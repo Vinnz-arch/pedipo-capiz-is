@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
 import { 
   Building2, 
@@ -23,7 +24,8 @@ import {
   Download,
   Eye,
   ChevronLeft,
-  Layers
+  Layers,
+  Loader2
 } from "lucide-react";
 import { notify } from "@/util/notify";
 import { InquiryService } from "@/services/InquiryService";
@@ -34,6 +36,7 @@ import {
 } from "@/util/opportunitiesPdfExport";
 import { SpreadsheetGrid } from "@/components/spreadsheet/SpreadsheetGrid";
 import { DocumentViewerModal } from "@/components/documents/DocumentViewerModal";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { 
   OpportunityService,
   type OpportunityDocumentData,
@@ -42,7 +45,9 @@ import {
   type OpportunityData,
   type CategoryData,
   formatDocFileSize,
-  resolveDocUrl 
+  downloadAnnualReportBlob,
+  downloadDocumentBlob,
+  resolveAnnualReportUrl
 } from "@/services/OpportunityService";
 
 export const InvestorPortal: React.FC = () => {
@@ -53,7 +58,34 @@ export const InvestorPortal: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"opportunities" | "inquiries">("opportunities");
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"opportunities" | "inquiries">(
+    tabParam === "inquiries" ? "inquiries" : "opportunities"
+  );
+
+  useEffect(() => {
+    const currentTab = searchParams.get("tab");
+    if (currentTab === "inquiries" || currentTab === "opportunities") {
+      setActiveTab(currentTab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: "opportunities" | "inquiries") => {
+    setActiveTab(tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab === "inquiries") {
+        next.set("tab", "inquiries");
+      } else {
+        next.delete("tab");
+        next.delete("id");
+        next.delete("inquiry_id");
+      }
+      return next;
+    });
+  };
 
   // Inquiry Modal State & Wizard
   const [inquiryModalProject, setInquiryModalProject] = useState<OpportunityData | null>(null);
@@ -87,6 +119,24 @@ export const InvestorPortal: React.FC = () => {
   const [parentOperatorsDocList, setParentOperatorsDocList] = useState<ParentOpportunityDocumentData[]>([]);
   const [parentAnnualReports, setParentAnnualReports] = useState<any[]>([]);
   const [isLoadingParentOperators, setIsLoadingParentOperators] = useState<boolean>(false);
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
+
+  const handleDownloadAnnualReport = async (report: any) => {
+    if (!viewingParentOperators) return;
+    const reportKey = report.id || report.filename;
+    setDownloadingReportId(reportKey);
+    try {
+      const filename = await downloadAnnualReportBlob(viewingParentOperators.id, report);
+      notify.success("Download Complete", `Downloaded ${filename}`);
+    } catch (err: any) {
+      console.error("Failed to download annual report:", err);
+      // Fallback: direct window open with API URL
+      const fallbackUrl = resolveAnnualReportUrl(viewingParentOperators.id, report);
+      window.open(fallbackUrl, "_blank");
+    } finally {
+      setDownloadingReportId(null);
+    }
+  };
 
   const openParentOperatorsModal = async (parent: ParentOpportunityData) => {
     setViewingParentOperators(parent);
@@ -273,7 +323,11 @@ export const InvestorPortal: React.FC = () => {
 
     setIsSubmittingInquiry(true);
     try {
+      const clientUser = JSON.parse(localStorage.getItem("client_user") || "{}");
       const formData = new FormData();
+      if (clientUser?.id) {
+        formData.append("user_id", String(clientUser.id));
+      }
       if (inquiryModalProject?.id) {
         formData.append("opportunity_id", String(inquiryModalProject.id));
       }
@@ -379,7 +433,7 @@ export const InvestorPortal: React.FC = () => {
         {/* Tab Picker */}
         <div className="flex border-b border-slate-200">
           <button
-            onClick={() => setActiveTab("opportunities")}
+            onClick={() => handleTabChange("opportunities")}
             className={`py-3 px-6 text-sm font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "opportunities"
                 ? "border-[#002B66] text-[#002B66]"
@@ -390,7 +444,7 @@ export const InvestorPortal: React.FC = () => {
             <span>Browse Opportunities</span>
           </button>
           <button
-            onClick={() => setActiveTab("inquiries")}
+            onClick={() => handleTabChange("inquiries")}
             className={`py-3 px-6 text-sm font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "inquiries"
                 ? "border-[#002B66] text-[#002B66]"
@@ -467,10 +521,10 @@ export const InvestorPortal: React.FC = () => {
 
         {/* Opportunities / Parent Groups Grid */}
         {isLoading ? (
-          <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-500 font-medium">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
-            <span>Loading investment opportunity portfolio...</span>
-          </div>
+          <LoadingState
+            variant="card"
+            message="Loading investment opportunity portfolio..."
+          />
         ) : activeParentView ? (
           /* Drilldown View: Child Projects belonging to Active Parent Opportunity */
           <div className="space-y-6 animate-in fade-in duration-200">
@@ -505,10 +559,11 @@ export const InvestorPortal: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 self-start md:self-center shrink-0">
                 <button
                   onClick={() => openParentOperatorsModal(activeParentView)}
+                  title="Reports & Documents"
                   className="px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-2xs group"
                 >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-                  <span>Annual Reports</span>
+                  <Layers className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                  <span>Reports & Documents</span>
                 </button>
                 <button
                   onClick={() => setActiveParentView(null)}
@@ -753,10 +808,11 @@ export const InvestorPortal: React.FC = () => {
                 <div className="p-6 pt-0 space-y-2">
                   <button
                     onClick={() => openParentOperatorsModal(parent)}
+                    title="Reports & Documents"
                     className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs group/ops"
                   >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 group-hover/ops:scale-110 transition-transform" />
-                    <span>Annual Reports</span>
+                    <Layers className="w-4 h-4 text-emerald-600 group-hover/ops:scale-110 transition-transform" />
+                    <span>Reports & Documents</span>
                   </button>
                   <button
                     onClick={() => setActiveParentView(parent)}
@@ -1223,34 +1279,16 @@ export const InvestorPortal: React.FC = () => {
         {/* Read-Only Investor Data Spreadsheet Modal */}
         {viewingSpreadsheetOpp && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden border border-slate-200 flex flex-col">
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                    {viewingSpreadsheetOpp.project_name} - Verified Project Data Sheet
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Official verified project metrics, site specifications, and economic indicators (Investor View-Only)
-                  </p>
-                </div>
-                <button
-                  onClick={() => setViewingSpreadsheetOpp(null)}
-                  className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden p-4">
-                <SpreadsheetGrid
-                  opportunityId={viewingSpreadsheetOpp.id}
-                  opportunityName={viewingSpreadsheetOpp.project_name}
-                  categoryName={viewingSpreadsheetOpp.category?.name || "Priority Project"}
-                  locationName={viewingSpreadsheetOpp.municipality?.name || viewingSpreadsheetOpp.location || "Capiz"}
-                  isAdmin={false}
-                  onClose={() => setViewingSpreadsheetOpp(null)}
-                />
-              </div>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[88vh] overflow-hidden border border-slate-200 flex flex-col">
+              <SpreadsheetGrid
+                opportunityId={viewingSpreadsheetOpp.id}
+                opportunityName={viewingSpreadsheetOpp.project_name}
+                categoryName={viewingSpreadsheetOpp.category?.name || "Priority Project"}
+                locationName={viewingSpreadsheetOpp.municipality?.name || viewingSpreadsheetOpp.location || "Capiz"}
+                sheetTitle="Verified Project Data Sheet (Investor View-Only)"
+                isAdmin={false}
+                onClose={() => setViewingSpreadsheetOpp(null)}
+              />
             </div>
           </div>
         )}
@@ -1397,16 +1435,14 @@ export const InvestorPortal: React.FC = () => {
                                   <Eye className="w-3.5 h-3.5" />
                                   <span>View Document</span>
                                 </button>
-                                <a
-                                  href={resolveDocUrl(doc.file_path, doc)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  download
+                                <button
+                                  type="button"
+                                  onClick={() => downloadDocumentBlob(doc)}
                                   title="Download copy"
                                   className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-[#002B66] font-bold text-xs transition-colors flex items-center justify-center cursor-pointer border border-slate-200 shrink-0"
                                 >
                                   <Download className="w-3.5 h-3.5" />
-                                </a>
+                                </button>
                               </div>
                             </div>
                           ))}
@@ -1480,19 +1516,19 @@ export const InvestorPortal: React.FC = () => {
               <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
-                    <FileSpreadsheet className="w-5 h-5" />
+                    <Layers className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 tracking-wider">
-                        Annual Reports
+                        Reports & Documents
                       </span>
                       <span className="text-xs font-bold text-slate-500">
                         {viewingParentOperators.category?.name || "Priority Sector"}
                       </span>
                     </div>
                     <h3 className="font-extrabold text-base sm:text-lg text-slate-900 leading-tight mt-0.5">
-                      Annual Reports - {viewingParentOperators.name}
+                      Reports & Documents - {viewingParentOperators.name}
                     </h3>
                     <p className="text-xs text-slate-500 hidden sm:block">
                       Provincial annual metrics, municipal operator distribution, and verified official documentation.
@@ -1548,16 +1584,11 @@ export const InvestorPortal: React.FC = () => {
                     </div>
 
                     {isLoadingParentOperators ? (
-                      <div className="p-12 text-center text-slate-400">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-600 mb-2" />
-                        <span className="text-xs font-medium">Loading annual reports...</span>
-                      </div>
+                      <LoadingState size="sm" message="Loading annual reports..." className="py-12" />
                     ) : parentAnnualReports.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {parentAnnualReports.map((report, idx) => {
-                          const downloadUrl = report.file_path?.startsWith("http")
-                            ? report.file_path
-                            : `http://localhost:8000${report.file_path?.startsWith("/") ? "" : "/"}${report.file_path || ""}`;
+                          const isDownloading = downloadingReportId === (report.id || report.filename);
                           return (
                             <div
                               key={report.id || report.filename || idx}
@@ -1585,16 +1616,19 @@ export const InvestorPortal: React.FC = () => {
                                 </div>
                               </div>
                               <div className="pt-2 border-t border-slate-200/60">
-                                <a
-                                  href={downloadUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  download={report.filename}
-                                  className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadAnnualReport(report)}
+                                  disabled={isDownloading}
+                                  className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-60"
                                 >
-                                  <Download className="w-3.5 h-3.5" />
+                                  {isDownloading ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Download className="w-3.5 h-3.5" />
+                                  )}
                                   <span>Download Report</span>
-                                </a>
+                                </button>
                               </div>
                             </div>
                           );
@@ -1623,10 +1657,7 @@ export const InvestorPortal: React.FC = () => {
                     </div>
 
                     {isLoadingParentOperators ? (
-                      <div className="p-12 text-center text-slate-400">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
-                        <span className="text-xs font-medium">Loading documents...</span>
-                      </div>
+                      <LoadingState size="sm" message="Loading documents..." className="py-12" />
                     ) : parentOperatorsDocList.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {parentOperatorsDocList.map((doc) => (
@@ -1659,16 +1690,14 @@ export const InvestorPortal: React.FC = () => {
                                 <Eye className="w-3.5 h-3.5" />
                                 <span>View Document</span>
                               </button>
-                              <a
-                                href={resolveDocUrl(doc.file_path, doc)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
+                              <button
+                                type="button"
+                                onClick={() => downloadDocumentBlob(doc)}
                                 title="Download copy"
                                 className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-[#002B66] font-bold text-xs transition-colors flex items-center justify-center cursor-pointer border border-slate-200 shrink-0"
                               >
                                 <Download className="w-3.5 h-3.5" />
-                              </a>
+                              </button>
                             </div>
                           </div>
                         ))}

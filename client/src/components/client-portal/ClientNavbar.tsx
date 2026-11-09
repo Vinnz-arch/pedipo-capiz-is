@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserServices } from "@/services/UserServices";
 import { PATHS } from "@/routes/paths";
 import { Spinner } from "@/components/ui/spinner";
+import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 
 const ClientNavbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,11 +47,8 @@ const ClientNavbar: React.FC = () => {
       </div>
       
       <div className="flex items-center gap-4">
-        {/* Notification Bell */}
-        <button title="Notifications" className="p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors relative cursor-pointer">
-          <Icons.Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full border-2 border-card"></span>
-        </button>
+        {/* Notification Bell Dropdown */}
+        <NotificationDropdown />
 
         <div className="h-8 w-px bg-border mx-1"></div>
 

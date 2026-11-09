@@ -4,11 +4,11 @@ import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
 import { MsmeDirectoryService, type MsmeData } from "@/services/MsmeDirectoryService";
 import { MunicipalityService, type MunicipalityData } from "@/services/MunicipalityService";
 import { OpportunityService, type CategoryData } from "@/services/OpportunityService";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { 
   Search, 
   MapPin, 
   Store, 
-  Loader2, 
   ArrowRight, 
   SlidersHorizontal,
   ChevronLeft,
@@ -180,10 +180,7 @@ export const MsmeDirectory: React.FC = () => {
 
         {/* Directory Grid */}
         {isLoading ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-            <span className="text-xs font-bold text-slate-500">Scanning MSME directory records...</span>
-          </div>
+          <LoadingState message="Scanning MSME directory records..." className="py-24" />
         ) : msmes.length === 0 ? (
           <div className="py-24 bg-white border border-slate-100 rounded-3xl shadow-sm text-center">
             <Store className="w-12 h-12 text-slate-300 mx-auto mb-3" />

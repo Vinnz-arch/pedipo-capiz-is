@@ -145,6 +145,25 @@ class ParentOpportunityController extends Controller
 
         $parentOpportunity->update($validated);
 
+        if ($parentOpportunity->status === 'Published' && $parentOpportunity->wasChanged('status')) {
+            try {
+                \App\Models\AppNotification::create([
+                    'role' => 'client',
+                    'user_id' => null,
+                    'type' => 'report',
+                    'title' => 'Opportunity Published',
+                    'message' => "The opportunity '{$parentOpportunity->name}' is now active and open on the Investor Portal.",
+                    'action_url' => '/portal/investorPortal',
+                    'data' => [
+                        'opportunity_id' => $parentOpportunity->id,
+                        'name' => $parentOpportunity->name,
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to create published opportunity notification: ' . $e->getMessage());
+            }
+        }
+
         Cache::forget('public_parent_opportunities');
         Cache::forget('public_opportunities');
 
@@ -351,6 +370,8 @@ class ParentOpportunityController extends Controller
             'file_path' => 'nullable|string',
             'file_size' => 'nullable|integer',
             'annual_reports' => 'nullable|array',
+            'sheets' => 'nullable|array',
+            'html' => 'nullable|string',
         ]);
 
         $parent->data_year = $validated['data_year'] ?? $parent->data_year ?? date('Y');
@@ -361,6 +382,8 @@ class ParentOpportunityController extends Controller
         $parent->spreadsheet_data = [
             'headers' => $validated['headers'] ?? ($existing['headers'] ?? []),
             'rows' => $validated['rows'] ?? ($existing['rows'] ?? []),
+            'sheets' => $validated['sheets'] ?? ($existing['sheets'] ?? null),
+            'html' => $validated['html'] ?? ($existing['html'] ?? null),
             'annual_reports' => $reports,
             'data_year' => $parent->data_year,
             'filename' => $validated['filename'] ?? ($existing['filename'] ?? null),
@@ -429,11 +452,31 @@ class ParentOpportunityController extends Controller
             ];
         }
 
+        // Decode JSON preview inputs if passed in FormData
+        $headers = is_string($request->input('headers')) 
+            ? json_decode($request->input('headers'), true) 
+            : ($request->input('headers') ?? ($existing['headers'] ?? []));
+
+        $rows = is_string($request->input('rows')) 
+            ? json_decode($request->input('rows'), true) 
+            : ($request->input('rows') ?? ($existing['rows'] ?? []));
+
+        $sheets = is_string($request->input('sheets')) 
+            ? json_decode($request->input('sheets'), true) 
+            : ($request->input('sheets') ?? ($existing['sheets'] ?? null));
+
+        $html = $request->input('html') ?? ($existing['html'] ?? null);
+
         $parent->spreadsheet_data = [
             'annual_reports' => $reports,
             'filename' => count($reports) > 0 ? $reports[count($reports) - 1]['filename'] : null,
             'file_path' => count($reports) > 0 ? $reports[count($reports) - 1]['file_path'] : null,
             'file_size' => count($reports) > 0 ? $reports[count($reports) - 1]['file_size'] : null,
+            'headers' => $headers,
+            'rows' => $rows,
+            'sheets' => $sheets,
+            'html' => $html,
+            'data_year' => $parent->data_year,
             'uploaded_at' => now()->toIso8601String(),
         ];
         $parent->save();
@@ -460,11 +503,31 @@ class ParentOpportunityController extends Controller
             return ($r['id'] ?? '') !== $fileId && ($r['filename'] ?? '') !== $fileId;
         }));
 
+        // Decode JSON preview inputs if passed in FormData
+        $headers = is_string($request->input('headers')) 
+            ? json_decode($request->input('headers'), true) 
+            : ($request->input('headers') ?? ($existing['headers'] ?? []));
+
+        $rows = is_string($request->input('rows')) 
+            ? json_decode($request->input('rows'), true) 
+            : ($request->input('rows') ?? ($existing['rows'] ?? []));
+
+        $sheets = is_string($request->input('sheets')) 
+            ? json_decode($request->input('sheets'), true) 
+            : ($request->input('sheets') ?? ($existing['sheets'] ?? null));
+
+        $html = $request->input('html') ?? ($existing['html'] ?? null);
+
         $parent->spreadsheet_data = [
             'annual_reports' => $reports,
             'filename' => count($reports) > 0 ? $reports[count($reports) - 1]['filename'] : null,
             'file_path' => count($reports) > 0 ? $reports[count($reports) - 1]['file_path'] : null,
             'file_size' => count($reports) > 0 ? $reports[count($reports) - 1]['file_size'] : null,
+            'headers' => $headers,
+            'rows' => $rows,
+            'sheets' => $sheets,
+            'html' => $html,
+            'data_year' => $parent->data_year,
             'uploaded_at' => now()->toIso8601String(),
         ];
         $parent->save();
@@ -576,13 +639,84 @@ class ParentOpportunityController extends Controller
         $fileContent = Storage::disk('public')->get($relativePath);
         $mimeType = Storage::disk('public')->mimeType($relativePath) ?: 'application/octet-stream';
 
+        $isDownload = request()->boolean('download') || request()->query('download') === '1' || request()->query('download') === 'true';
+        $disposition = $isDownload ? 'attachment' : 'inline';
+
         return response($fileContent, 200, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+            'Content-Disposition' => "{$disposition}; filename=\"{$document->file_name}\"",
             'Access-Control-Allow-Origin' => '*',
             'Access-Control-Allow-Methods' => 'GET, OPTIONS',
             'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With',
+            'Access-Control-Expose-Headers' => 'Content-Disposition, Content-Type, Content-Length',
             'Cache-Control' => 'no-cache, private',
+        ]);
+    }
+
+    /**
+     * Download the exact uploaded spreadsheet file for a parent opportunity.
+     */
+    public function downloadSpreadsheet($id)
+    {
+        $parent = ParentOpportunity::findOrFail($id);
+        $spreadsheetData = $parent->spreadsheet_data ?? [];
+        $filePath = $spreadsheetData['file_path'] ?? null;
+        $filename = $spreadsheetData['filename'] ?? ($parent->name . '_Annual_Report.xlsx');
+
+        if (!$filePath) {
+            return response()->json(['message' => 'No spreadsheet file attached to this parent opportunity.'], 404);
+        }
+
+        $relativePath = str_replace('/storage/', '', $filePath);
+        if (!Storage::disk('public')->exists($relativePath)) {
+            return response()->json(['message' => 'Spreadsheet file not found on server.'], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($relativePath);
+        $mimeType = Storage::disk('public')->mimeType($relativePath) ?: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+        return response()->download($fullPath, $filename, [
+            'Content-Type' => $mimeType,
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+            'Access-Control-Allow-Headers' => '*',
+            'Access-Control-Expose-Headers' => 'Content-Disposition',
+        ]);
+    }
+
+    /**
+     * Download a specific annual report file for a parent opportunity.
+     */
+    public function downloadAnnualReportFile($id, $fileId)
+    {
+        $parent = ParentOpportunity::findOrFail($id);
+        $spreadsheetData = $parent->spreadsheet_data ?? [];
+        $reports = $spreadsheetData['annual_reports'] ?? [];
+
+        // Match by report id, or filename if fileId is filename
+        $target = collect($reports)->first(function ($r) use ($fileId) {
+            return ($r['id'] ?? '') === $fileId || ($r['filename'] ?? '') === $fileId;
+        });
+
+        if (!$target || empty($target['file_path'])) {
+            return response()->json(['message' => 'Annual report file not found.'], 404);
+        }
+
+        $relativePath = str_replace('/storage/', '', $target['file_path']);
+        if (!Storage::disk('public')->exists($relativePath)) {
+            return response()->json(['message' => 'Annual report file not found on server.'], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($relativePath);
+        $filename = $target['filename'] ?? basename($relativePath);
+        $mimeType = Storage::disk('public')->mimeType($relativePath) ?: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+        return response()->download($fullPath, $filename, [
+            'Content-Type' => $mimeType,
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+            'Access-Control-Allow-Headers' => '*',
+            'Access-Control-Expose-Headers' => 'Content-Disposition',
         ]);
     }
 }

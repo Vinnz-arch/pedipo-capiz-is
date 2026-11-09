@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/Mainlayout";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { MsmeDirectoryService, type MsmeData, type MsmeStats } from "@/services/MsmeDirectoryService";
 import { MunicipalityService, type MunicipalityData } from "@/services/MunicipalityService";
 import { OpportunityService, type CategoryData } from "@/services/OpportunityService";
@@ -557,10 +558,7 @@ export const ManageMsmes: React.FC = () => {
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
           
           {isLoading ? (
-            <div className="py-24 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-              <span className="text-xs font-bold text-slate-500">Retrieving business directory...</span>
-            </div>
+            <LoadingState message="Retrieving business directory..." className="py-24" />
           ) : msmes.length === 0 ? (
             <div className="py-24 text-center">
               <Store className="w-12 h-12 text-slate-300 mx-auto mb-3" />

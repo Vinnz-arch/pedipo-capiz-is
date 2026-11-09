@@ -129,3 +129,55 @@
   border: 1px solid #cbd5e1 !important;
   padding: 0.5rem 0.75rem !important;
 }
+
+/* Excel High-Fidelity Document Preview Styles (Option A) */
+.excel-doc-wrapper {
+  width: 100%;
+  overflow: auto;
+}
+
+.excel-doc-wrapper table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  min-width: 600px;
+  background-color: #ffffff !important;
+  font-family: inherit;
+  font-size: 0.8125rem !important; /* 13px */
+  line-height: 1.35rem;
+  color: #1e293b;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.excel-doc-wrapper td,
+.excel-doc-wrapper th {
+  border: 1px solid #cbd5e1;
+  padding: 0.35rem 0.6rem;
+  vertical-align: middle;
+  min-width: 60px;
+  background-clip: padding-box;
+}
+
+/* Fallback for unstyled first row */
+.excel-doc-wrapper tr:first-child td:not([style*="background-color"]):not([style*="background:"]),
+.excel-doc-wrapper tr:first-child th:not([style*="background-color"]):not([style*="background:"]) {
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: #002B66;
+}
+
+/* Merged cells styling */
+.excel-doc-wrapper td[colspan],
+.excel-doc-wrapper th[colspan] {
+  font-weight: 600;
+}
+
+/* Numeric alignment fallback for cells with numeric data types */
+.excel-doc-wrapper td[data-t="n"]:not([style*="text-align"]) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.excel-doc-wrapper tr:hover td:not([style*="background-color"]):not([style*="background:"]) {
+  background-color: #f1f5f9;
+}

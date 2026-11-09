@@ -72,6 +72,25 @@ class MsmeAssistanceRequestController extends Controller
             'status' => 'Submitted',
         ]);
 
+        try {
+            \App\Models\AppNotification::create([
+                'role' => 'admin',
+                'type' => 'msme_request',
+                'title' => 'New MSME Assistance Request',
+                'message' => "{$assistanceRequest->company_name} requested {$assistanceRequest->classification}.",
+                'action_url' => '/app/manageInquires?tab=msme&id=' . $assistanceRequest->id,
+                'data' => [
+                    'request_id' => $assistanceRequest->id,
+                    'company_name' => $assistanceRequest->company_name,
+                    'contact_person' => $assistanceRequest->contact_person,
+                    'classification' => $assistanceRequest->classification,
+                    'email' => $assistanceRequest->email,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create MSME assistance notification: ' . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Business Processing Assistance request submitted successfully!',
             'request' => $assistanceRequest,
@@ -121,6 +140,26 @@ class MsmeAssistanceRequestController extends Controller
             }
 
             $assistanceRequest->save();
+
+            try {
+                \App\Models\AppNotification::create([
+                    'role' => 'client',
+                    'user_id' => $assistanceRequest->user_id,
+                    'type' => 'msme_status',
+                    'title' => 'Assistance Request Progress',
+                    'message' => "Your assistance request for {$assistanceRequest->company_name} is now in '{$assistanceRequest->status}'.",
+                    'action_url' => '/portal/msmeAssistance?id=' . $assistanceRequest->id,
+                    'data' => [
+                        'request_id' => $assistanceRequest->id,
+                        'company_name' => $assistanceRequest->company_name,
+                        'status' => $assistanceRequest->status,
+                        'classification' => $assistanceRequest->classification,
+                        'admin_notes' => $assistanceRequest->admin_notes,
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to create client MSME status notification: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'message' => 'Request status updated successfully.',

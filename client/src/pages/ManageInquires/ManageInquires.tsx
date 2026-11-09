@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import MainLayout from "@/components/layout/Mainlayout";
 import { 
   Search, 
@@ -6,7 +7,6 @@ import {
   MessageSquare, 
   Clock, 
   CheckCircle2, 
-  AlertCircle, 
   Eye, 
   Trash2, 
   X, 
@@ -14,17 +14,23 @@ import {
   AlertTriangle,
   FileText,
   FolderOpen,
-  Briefcase
+  Briefcase,
+  Layers
 } from "lucide-react";
 import { InquiryService, type InquiryData } from "@/services/InquiryService";
 import { MsmeRequestsSection } from "./MsmeRequestsSection";
+import { downloadFileDirectly } from "@/util/fileDownload";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 export const ManageInquiries: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") === "msme" ? "msme" : "inquiries";
+
   const [inquiries, setInquiries] = useState<InquiryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"inquiries" | "msme">("inquiries");
+  const [activeTab, setActiveTab] = useState<"inquiries" | "msme">(initialTab);
 
   // Review Drawer / Modal State
   const [selectedInquiry, setSelectedInquiry] = useState<InquiryData | null>(null);
@@ -61,9 +67,38 @@ export const ManageInquiries: React.FC = () => {
     loadInquiries();
   }, []);
 
+  // Sync tab with URL search parameter
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "msme") {
+      setActiveTab("msme");
+    } else if (tab === "inquiries" || searchParams.get("type") === "inquiry") {
+      setActiveTab("inquiries");
+    }
+  }, [searchParams]);
+
+  // Open review modal if inquiry ID is provided in query params
+  useEffect(() => {
+    const id = searchParams.get("id");
+    const tab = searchParams.get("tab");
+    if (id && tab !== "msme" && inquiries.length > 0) {
+      const match = inquiries.find((i) => String(i.id) === String(id));
+      if (match) {
+        openReviewModal(match);
+      }
+    }
+  }, [searchParams, inquiries]);
+
   const openReviewModal = (inquiry: InquiryData) => {
     setSelectedInquiry(inquiry);
-    setReviewStatus(inquiry.status);
+    // Normalize status to one of the workflow step values
+    const normalizedStatus =
+      inquiry.status === "Submitted"
+        ? "Pending"
+        : inquiry.status === "Approved" || inquiry.status === "Responded"
+        ? "Completed"
+        : inquiry.status;
+    setReviewStatus(normalizedStatus);
     setAdminNotes(inquiry.admin_notes || "");
   };
 
@@ -102,36 +137,66 @@ export const ManageInquiries: React.FC = () => {
     }
   };
 
-  // Status Badge Helper
+  // Status Badge Helper directly aligned with Advance Workflow Status steps
   const getStatusBadge = (status: InquiryData["status"]) => {
     switch (status) {
       case "Pending":
+      case "Submitted":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            Pending Review
+            Step 1: Submit & Verify
           </span>
         );
       case "Under Review":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/60">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            Under Review
+            Step 2: LEDIP Review
           </span>
         );
+      case "Endorsed":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+            Step 3: ISD Endorsement
+          </span>
+        );
+      case "Assistance Identified":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+            Step 4: Assistance ID
+          </span>
+        );
+      case "Processing":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-600"></span>
+            Step 5: Action Plan
+          </span>
+        );
+      case "Completed":
       case "Approved":
       case "Responded":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-            {status}
+            Step 6: Completion
           </span>
         );
       case "Rejected":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
             Rejected
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            {status || "Pending"}
           </span>
         );
     }
@@ -200,29 +265,27 @@ export const ManageInquiries: React.FC = () => {
                 {inquiry.letter_of_intent && (
                   <div className="space-y-0.5">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Letter of Intent</p>
-                    <a 
-                      href={`http://localhost:8000${inquiry.letter_of_intent}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button 
+                      type="button"
+                      onClick={() => downloadFileDirectly(inquiry.letter_of_intent, `LOI_${inquiry.investor_name.trim().replace(/\s+/g, '_')}.pdf`)}
                       className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1.5 cursor-pointer"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>Download LOI</span>
-                    </a>
+                    </button>
                   </div>
                 )}
                 {inquiry.supporting_documents && (
                   <div className="space-y-0.5">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Supporting Documents</p>
-                    <a 
-                      href={`http://localhost:8000${inquiry.supporting_documents}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button 
+                      type="button"
+                      onClick={() => downloadFileDirectly(inquiry.supporting_documents, `Supporting_Docs_${inquiry.investor_name.trim().replace(/\s+/g, '_')}.pdf`)}
                       className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1.5 cursor-pointer"
                     >
                       <FolderOpen className="w-3.5 h-3.5" />
                       <span>Download Documents</span>
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>
@@ -346,9 +409,40 @@ export const ManageInquiries: React.FC = () => {
     );
   };
 
+  // Workflow Filter Tabs matching Advance Workflow Status
+  const WORKFLOW_FILTER_TABS = [
+    { label: "All", value: "All" },
+    { label: "Step 1: Verify", value: "Pending" },
+    { label: "Active Pipeline", value: "Pipeline" },
+    { label: "Step 2: Review", value: "Under Review" },
+    { label: "Step 3: Endorsed", value: "Endorsed" },
+    { label: "Step 4: Assistance", value: "Assistance Identified" },
+    { label: "Step 5: Processing", value: "Processing" },
+    { label: "Step 6: Completed", value: "Completed" },
+    { label: "Rejected", value: "Rejected" },
+  ];
+
   // Filter Logic
   const filteredInquiries = inquiries.filter((item) => {
-    const matchesStatus = statusFilter === "All" || item.status === statusFilter;
+    let matchesStatus = statusFilter === "All";
+    if (!matchesStatus) {
+      if (statusFilter === "Pending") {
+        matchesStatus = item.status === "Pending" || item.status === "Submitted";
+      } else if (statusFilter === "Pipeline") {
+        matchesStatus = [
+          "Under Review",
+          "Endorsed",
+          "Assistance Identified",
+          "Processing",
+        ].includes(item.status);
+      } else if (statusFilter === "Completed") {
+        matchesStatus =
+          item.status === "Completed" || item.status === "Approved" || item.status === "Responded";
+      } else {
+        matchesStatus = item.status === statusFilter;
+      }
+    }
+
     const matchesSearch =
       getRequestNumber(item).toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.investor_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -419,65 +513,134 @@ export const ManageInquiries: React.FC = () => {
           <MsmeRequestsSection />
         ) : (
           <>
-            {/* 4 Metric KPI Cards */}
+            {/* 4 Executive Metric Pipeline Cards (Clickable Quick-Filters) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Total Inquiries */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:border-slate-300 transition-all">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    TOTAL INQUIRIES
-                  </p>
-                  <h3 className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                    {inquiries.length}
-                  </h3>
-                </div>
-              </div>
-
-              {/* Pending Review */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:border-slate-300 transition-all">
-                <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    PENDING REVIEW
-                  </p>
-                  <h3 className="text-2xl font-extrabold text-amber-600 mt-0.5">
-                    {inquiries.filter((i) => i.status === "Pending").length}
-                  </h3>
+              {/* Card 1: Total Inquiries */}
+              <div
+                onClick={() => setStatusFilter("All")}
+                className={`bg-white rounded-2xl p-5 shadow-sm flex items-center justify-between transition-all cursor-pointer border ${
+                  statusFilter === "All"
+                    ? "border-[#002B66] ring-2 ring-[#002B66]/15 shadow-md bg-blue-50/20"
+                    : "border-slate-200/80 hover:border-slate-300 hover:shadow-md"
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      TOTAL INQUIRIES
+                    </p>
+                    <h3 className="text-2xl font-extrabold text-slate-900 mt-0.5">
+                      {inquiries.length}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                      All-time submissions
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Under Review */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:border-slate-300 transition-all">
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                  <AlertCircle className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    UNDER REVIEW
-                  </p>
-                  <h3 className="text-2xl font-extrabold text-indigo-600 mt-0.5">
-                    {inquiries.filter((i) => i.status === "Under Review").length}
-                  </h3>
+              {/* Card 2: Action Required / Pending Verification */}
+              <div
+                onClick={() => setStatusFilter("Pending")}
+                className={`bg-white rounded-2xl p-5 shadow-sm flex items-center justify-between transition-all cursor-pointer border ${
+                  statusFilter === "Pending"
+                    ? "border-amber-500 ring-2 ring-amber-500/15 shadow-md bg-amber-50/20"
+                    : "border-slate-200/80 hover:border-slate-300 hover:shadow-md"
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        ACTION REQUIRED
+                      </p>
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 uppercase">
+                        Step 1
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-extrabold text-amber-600 mt-0.5">
+                      {inquiries.filter((i) => i.status === "Pending" || i.status === "Submitted").length}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                      Awaiting verification
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Responded / Resolved */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:border-slate-300 transition-all">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                  <CheckCircle2 className="w-5 h-5" />
+              {/* Card 3: In Active Pipeline */}
+              <div
+                onClick={() => setStatusFilter("Pipeline")}
+                className={`bg-white rounded-2xl p-5 shadow-sm flex items-center justify-between transition-all cursor-pointer border ${
+                  statusFilter === "Pipeline"
+                    ? "border-indigo-500 ring-2 ring-indigo-500/15 shadow-md bg-indigo-50/20"
+                    : "border-slate-200/80 hover:border-slate-300 hover:shadow-md"
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        ACTIVE PIPELINE
+                      </p>
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-800 uppercase">
+                        Steps 2–5
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-extrabold text-indigo-600 mt-0.5">
+                      {inquiries.filter((i) =>
+                        ["Under Review", "Endorsed", "Assistance Identified", "Processing"].includes(
+                          i.status
+                        )
+                      ).length}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                      In evaluation & planning
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    RESOLVED / RESPONDED
-                  </p>
-                  <h3 className="text-2xl font-extrabold text-emerald-600 mt-0.5">
-                    {inquiries.filter((i) => i.status === "Approved" || i.status === "Responded").length}
-                  </h3>
+              </div>
+
+              {/* Card 4: Resolved & Completed */}
+              <div
+                onClick={() => setStatusFilter("Completed")}
+                className={`bg-white rounded-2xl p-5 shadow-sm flex items-center justify-between transition-all cursor-pointer border ${
+                  statusFilter === "Completed"
+                    ? "border-emerald-500 ring-2 ring-emerald-500/15 shadow-md bg-emerald-50/20"
+                    : "border-slate-200/80 hover:border-slate-300 hover:shadow-md"
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        RESOLVED / COMPLETED
+                      </p>
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 uppercase">
+                        Step 6
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-extrabold text-emerald-600 mt-0.5">
+                      {inquiries.filter((i) =>
+                        i.status === "Completed" || i.status === "Approved" || i.status === "Responded"
+                      ).length}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                      Officially endorsed & closed
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -489,17 +652,17 @@ export const ManageInquiries: React.FC = () => {
                 <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/40">
                   {/* Status Filter Chips */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-                    {["All", "Pending", "Under Review", "Responded", "Approved", "Rejected"].map((status) => (
+                    {WORKFLOW_FILTER_TABS.map((tab) => (
                       <button
-                        key={status}
-                        onClick={() => setStatusFilter(status)}
+                        key={tab.value}
+                        onClick={() => setStatusFilter(tab.value)}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                          statusFilter === status
+                          statusFilter === tab.value
                             ? "bg-[#002B66] text-white shadow-xs"
                             : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                         }`}
                       >
-                        {status}
+                        {tab.label}
                       </button>
                     ))}
                   </div>
@@ -524,18 +687,18 @@ export const ManageInquiries: React.FC = () => {
                       <tr className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                         <th className="px-6 py-3.5">REQUEST #</th>
                         <th className="px-6 py-3.5">INVESTOR & ENTITY</th>
-                        <th className="px-4 py-3.5">CONTACT EMAIL</th>
-                        <th className="px-4 py-3.5">TARGET OPPORTUNITY</th>
+                        <th className="px-4 py-3.5 max-w-[190px]">CONTACT EMAIL</th>
+                        <th className="px-4 py-3.5 max-w-[260px]">TARGET OPPORTUNITY</th>
                         <th className="px-4 py-3.5">DATE SUBMITTED</th>
-                        <th className="px-4 py-3.5">REVIEW STATUS</th>
+                        <th className="px-4 py-3.5">WORKFLOW STATUS</th>
                         <th className="px-4 py-3.5 text-right">ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-sm">
                       {isLoading ? (
                         <tr>
-                          <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
-                            Loading inquiry registry...
+                          <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                            <LoadingState message="Loading inquiry registry..." className="py-6" />
                           </td>
                         </tr>
                       ) : filteredInquiries.length === 0 ? (
@@ -569,13 +732,19 @@ export const ManageInquiries: React.FC = () => {
                             </td>
 
                             {/* Email */}
-                            <td className="px-4 py-4 text-slate-600 font-medium whitespace-nowrap text-xs">
+                            <td
+                              className="px-4 py-4 text-slate-600 font-medium text-xs truncate max-w-[190px]"
+                              title={item.email}
+                            >
                               {item.email}
                             </td>
 
                             {/* Opportunity */}
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-lg border border-blue-100">
+                            <td className="px-4 py-4 max-w-[260px]">
+                              <span
+                                title={item.opportunity?.project_name || "General Opportunity"}
+                                className="inline-block bg-blue-50 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-lg border border-blue-100 leading-snug line-clamp-2 break-words"
+                              >
                                 {item.opportunity?.project_name || "General Opportunity"}
                               </span>
                             </td>

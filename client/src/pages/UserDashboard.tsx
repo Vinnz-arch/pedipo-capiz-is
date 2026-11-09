@@ -9,11 +9,11 @@ import {
   ArrowRight, 
   Clock, 
   Sparkles,
-  Loader2,
   ShieldCheck,
   FileText
 } from "lucide-react";
 import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { MsmeService, type MsmeRequestData } from "@/services/MsmeService";
 import { OpportunityService, type OpportunityData } from "@/services/OpportunityService";
 import { PATHS } from "@/routes/paths";
@@ -98,10 +98,7 @@ const UserDashboard: React.FC = () => {
 
         {/* Loading Indicator */}
         {isLoading ? (
-          <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-9 h-9 text-[#002B66] animate-spin" />
-            <p className="text-xs font-semibold text-slate-400">Synchronizing portal metrics...</p>
-          </div>
+          <LoadingState message="Synchronizing portal metrics..." className="min-h-[40vh]" />
         ) : (
           <>
             {/* KPI Summary Grid */}
@@ -268,9 +265,10 @@ const UserDashboard: React.FC = () => {
                     </div>
                   ) : (
                     msmeRequests.slice(0, 3).map((req) => (
-                      <div 
+                      <Link 
                         key={req.id} 
-                        className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 hover:border-indigo-100 transition-all text-xs"
+                        to={`${PATHS.PORTAL.MSME_ASSISTANCE}?id=${req.id}`}
+                        className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-slate-50/50 transition-all text-xs cursor-pointer block"
                       >
                         <div className="space-y-1">
                           <p className="font-extrabold text-slate-900 line-clamp-1">{req.company_name}</p>
@@ -290,7 +288,7 @@ const UserDashboard: React.FC = () => {
                         }`}>
                           {req.status}
                         </span>
-                      </div>
+                      </Link>
                     ))
                   )}
                 </div>
