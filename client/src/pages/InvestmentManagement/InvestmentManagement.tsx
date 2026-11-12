@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import MainLayout from "@/components/layout/Mainlayout";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
+import { resolveProjectImageUrl } from "@/util/projectImage";
 import { 
   Globe,
   Eye, 
@@ -23,7 +25,8 @@ import {
   Building2,
   Layers,
   Search,
-  Database
+  Database,
+  ImageOff
 } from "lucide-react";
 import { notify } from "@/util/notify";
 import { 
@@ -40,6 +43,8 @@ import {
 } from "@/services/OpportunityService";
 import { SpreadsheetGrid } from "@/components/spreadsheet/SpreadsheetGrid";
 import { DocumentViewerModal } from "@/components/documents/DocumentViewerModal";
+import { publishLiveSync } from "@/util/liveSync";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 export const InvestmentManagement: React.FC = () => {
   // Data State
@@ -53,7 +58,7 @@ export const InvestmentManagement: React.FC = () => {
   // Filter & Drilldown State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");
-  const [activeParentView, setActiveParentView] = useState<ParentOpportunityData | null>(null);
+  const [activeParentId, setActiveParentId] = useState<number | string | null>(null);
 
   // Parent Modal State (Create / Edit)
   const [isParentModalOpen, setIsParentModalOpen] = useState(false);
@@ -80,18 +85,57 @@ export const InvestmentManagement: React.FC = () => {
   const [childDescription, setChildDescription] = useState("");
   const [childImageFile, setChildImageFile] = useState<File | null>(null);
   const [childImagePreview, setChildImagePreview] = useState<string | null>(null);
+  const [removeChildImage, setRemoveChildImage] = useState(false);
+  const childImageInputRef = useRef<HTMLInputElement | null>(null);
   const [isSavingChild, setIsSavingChild] = useState(false);
   const [deletingChild, setDeletingChild] = useState<OpportunityData | null>(null);
 
   // Child Project Full View Modal State
-  const [viewingChildProject, setViewingChildProject] = useState<OpportunityData | null>(null);
+  const [viewingChildId, setViewingChildId] = useState<number | string | null>(null);
 
   // Spreadsheet & Document Viewer Modals
-  const [spreadsheetModalProject, setSpreadsheetModalProject] = useState<OpportunityData | null>(null);
+  const [spreadsheetModalProjectId, setSpreadsheetModalProjectId] = useState<number | string | null>(null);
   const [previewingDoc, setPreviewingDoc] = useState<OpportunityDocumentData | null>(null);
 
   // Overall Number of Operators and Production Modal State
-  const [operatorsModalParent, setOperatorsModalParent] = useState<ParentOpportunityData | null>(null);
+  const [operatorsModalParentId, setOperatorsModalParentId] = useState<number | string | null>(null);
+
+  const activeParentView = useMemo(
+    () => parentOpportunities.find((p) => String(p.id) === String(activeParentId)) ?? null,
+    [parentOpportunities, activeParentId]
+  );
+  const setActiveParentView = (parent: ParentOpportunityData | null) => {
+    setActiveParentId(parent ? parent.id : null);
+  };
+
+  const allChildProjects = useMemo(
+    () => parentOpportunities.flatMap((p) => p.projects || []),
+    [parentOpportunities]
+  );
+
+  const viewingChildProject = useMemo(
+    () => allChildProjects.find((c) => String(c.id) === String(viewingChildId)) ?? null,
+    [allChildProjects, viewingChildId]
+  );
+  const setViewingChildProject = (child: OpportunityData | null) => {
+    setViewingChildId(child ? child.id : null);
+  };
+
+  const spreadsheetModalProject = useMemo(
+    () => allChildProjects.find((c) => String(c.id) === String(spreadsheetModalProjectId)) ?? null,
+    [allChildProjects, spreadsheetModalProjectId]
+  );
+  const setSpreadsheetModalProject = (child: OpportunityData | null) => {
+    setSpreadsheetModalProjectId(child ? child.id : null);
+  };
+
+  const operatorsModalParent = useMemo(
+    () => parentOpportunities.find((p) => String(p.id) === String(operatorsModalParentId)) ?? null,
+    [parentOpportunities, operatorsModalParentId]
+  );
+  const setOperatorsModalParent = (parent: ParentOpportunityData | null) => {
+    setOperatorsModalParentId(parent ? parent.id : null);
+  };
   const [operatorsAnnualReports, setOperatorsAnnualReports] = useState<any[]>([]);
   const [isUploadingAnnualReport, setIsUploadingAnnualReport] = useState(false);
   const [isDeletingAnnualReportId, setIsDeletingAnnualReportId] = useState<string | null>(null);
@@ -102,16 +146,11 @@ export const InvestmentManagement: React.FC = () => {
   const [operatorsSelectedDocFile, setOperatorsSelectedDocFile] = useState<File | null>(null);
   const [previewingParentDoc, setPreviewingParentDoc] = useState<ParentOpportunityDocumentData | null>(null);
 
-  const resolveImageUrl = (path?: string) => {
-    if (!path) return "/images/seafood_hub.png";
-    if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("blob:")) {
-      return path;
+  const loadData = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoading(true);
     }
-    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
-  };
-
-  const loadData = async () => {
-    setIsLoading(true);
     try {
       const res = await OpportunityService.getAllParents();
       if (res.categories && res.categories.length > 0) {
@@ -122,21 +161,13 @@ export const InvestmentManagement: React.FC = () => {
       }
       if (res.parent_opportunities) {
         setParentOpportunities(res.parent_opportunities);
-
-        // Keep active drilldown parent updated with fresh children
-        if (activeParentView) {
-          const updatedActive = res.parent_opportunities.find(
-            (p) => String(p.id) === String(activeParentView.id)
-          );
-          if (updatedActive) {
-            setActiveParentView(updatedActive);
-          }
-        }
       }
     } catch (error) {
       console.error("Failed to load parent opportunities:", error);
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -144,21 +175,18 @@ export const InvestmentManagement: React.FC = () => {
     loadData();
   }, []);
 
+  useLiveSync(["opportunities", "all"], () => loadData({ silent: true }), {
+    pollIntervalMs: 15000,
+  });
+
   const handleSyncPortal = async () => {
     setIsSyncing(true);
     try {
       await OpportunityService.syncPortal();
-      await loadData();
+      await loadData({ silent: true });
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setLastSyncedTime(timeStr);
-
-      try {
-        const channel = new BroadcastChannel("pedipo_portal_sync");
-        channel.postMessage({ type: "SYNC_PORTAL", timestamp: new Date().toISOString() });
-        channel.close();
-      } catch (err) {
-        console.warn("BroadcastChannel error:", err);
-      }
+      publishLiveSync(["opportunities", "all"], { isManualPortalSync: true });
     } catch (error) {
       console.error("Sync portal error:", error);
     } finally {
@@ -202,13 +230,26 @@ export const InvestmentManagement: React.FC = () => {
       };
 
       if (editingParentId) {
-        await OpportunityService.updateParent(editingParentId, payload);
+        const res = await OpportunityService.updateParent(editingParentId, payload);
+        if (res?.parent_opportunity) {
+          setParentOpportunities((prev) =>
+            prev.map((p) =>
+              String(p.id) === String(editingParentId)
+                ? { ...p, ...res.parent_opportunity, projects: res.parent_opportunity.projects ?? p.projects }
+                : p
+            )
+          );
+        }
       } else {
-        await OpportunityService.createParent(payload);
+        const res = await OpportunityService.createParent(payload);
+        if (res?.parent_opportunity) {
+          setParentOpportunities((prev) => [res.parent_opportunity, ...prev]);
+        }
       }
 
       setIsParentModalOpen(false);
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (error) {
       console.error("Failed to save parent opportunity:", error);
     } finally {
@@ -224,7 +265,8 @@ export const InvestmentManagement: React.FC = () => {
       if (activeParentView?.id === deletingParent.id) {
         setActiveParentView(null);
       }
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (error) {
       console.error("Failed to delete parent opportunity:", error);
     }
@@ -245,6 +287,10 @@ export const InvestmentManagement: React.FC = () => {
     setChildDescription("");
     setChildImageFile(null);
     setChildImagePreview(null);
+    setRemoveChildImage(false);
+    if (childImageInputRef.current) {
+      childImageInputRef.current.value = "";
+    }
     setIsChildModalOpen(true);
   };
 
@@ -260,7 +306,11 @@ export const InvestmentManagement: React.FC = () => {
     setChildLocation(child.location || "");
     setChildDescription(child.description || "");
     setChildImageFile(null);
-    setChildImagePreview(resolveImageUrl(child.image_path));
+    setChildImagePreview(resolveProjectImageUrl(child.image_path));
+    setRemoveChildImage(false);
+    if (childImageInputRef.current) {
+      childImageInputRef.current.value = "";
+    }
     setIsChildModalOpen(true);
   };
 
@@ -288,16 +338,46 @@ export const InvestmentManagement: React.FC = () => {
       }
       if (childImageFile) {
         formData.append("image", childImageFile);
+      } else if (editingChildId && removeChildImage) {
+        formData.append("remove_image", "1");
       }
 
       if (editingChildId) {
-        await OpportunityService.updateChildProject(editingChildId, formData);
+        const res = await OpportunityService.updateChildProject(editingChildId, formData);
+        if (res?.project) {
+          setParentOpportunities((prev) =>
+            prev.map((p) =>
+              String(p.id) === String(res.project.parent_opportunity_id || childParentId)
+                ? {
+                    ...p,
+                    projects: (p.projects || []).map((c) =>
+                      String(c.id) === String(editingChildId) ? res.project : c
+                    ),
+                  }
+                : p
+            )
+          );
+        }
       } else if (childParentId) {
-        await OpportunityService.addChildProject(childParentId, formData);
+        const res = await OpportunityService.addChildProject(childParentId, formData);
+        if (res?.project) {
+          setParentOpportunities((prev) =>
+            prev.map((p) =>
+              String(p.id) === String(childParentId)
+                ? {
+                    ...p,
+                    projects: [res.project, ...(p.projects || [])],
+                    projects_count: (p.projects_count ?? (p.projects?.length || 0)) + 1,
+                  }
+                : p
+            )
+          );
+        }
       }
 
       setIsChildModalOpen(false);
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (error) {
       console.error("Failed to save child project:", error);
     } finally {
@@ -313,7 +393,8 @@ export const InvestmentManagement: React.FC = () => {
       if (viewingChildProject?.id === deletingChild.id) {
         setViewingChildProject(null);
       }
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (error) {
       console.error("Failed to delete child project:", error);
     }
@@ -368,7 +449,8 @@ export const InvestmentManagement: React.FC = () => {
       const updated = res.annual_reports || (res.spreadsheet_data?.annual_reports) || [];
       setOperatorsAnnualReports(updated);
       notify.success("Annual Reports Uploaded", `Successfully uploaded ${fileArray.length} file(s).`);
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (error) {
       console.error("Failed to upload annual reports:", error);
       notify.error("Upload Failed", "Could not upload annual report file(s).");
@@ -387,7 +469,8 @@ export const InvestmentManagement: React.FC = () => {
       );
       setOperatorsAnnualReports(res.annual_reports || []);
       notify.success("File Removed", "Annual report file has been removed.");
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (error) {
       console.error("Failed to remove annual report file:", error);
       notify.error("Delete Failed", "Could not remove annual report file.");
@@ -461,7 +544,8 @@ export const InvestmentManagement: React.FC = () => {
       setOperatorsSelectedDocFile(null);
       const input = document.getElementById("parentDocFileInput") as HTMLInputElement;
       if (input) input.value = "";
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (error) {
       console.error("Failed to upload parent document:", error);
     } finally {
@@ -476,7 +560,8 @@ export const InvestmentManagement: React.FC = () => {
     try {
       const res = await OpportunityService.deleteParentDocument(operatorsModalParent.id, docId);
       setOperatorsDocuments(res.documents || []);
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (error) {
       console.error("Failed to delete parent document:", error);
     } finally {
@@ -726,46 +811,48 @@ export const InvestmentManagement: React.FC = () => {
                   >
                     <div>
                       {/* Parent Card Header Banner */}
-                      <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
+                      <div className="p-5 border-b border-slate-100 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100 whitespace-nowrap">
                               {parent.category?.name || "Investment Sector"}
                             </span>
                             {getStatusBadge(parent.status)}
                           </div>
-                          <h3 className="text-lg font-black text-slate-900 group-hover:text-blue-700 transition-colors mt-1">
-                            {parent.name}
-                          </h3>
-                        </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <Link
-                            to={`/app/dataEntry?parent=${parent.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            title="Open in Data Entry Module"
-                            className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#002B66] font-bold text-xs flex items-center gap-1.5 border border-blue-200/80 transition-all cursor-pointer shadow-2xs shrink-0"
-                          >
-                            <Database className="w-3.5 h-3.5 text-blue-600" />
-                            <span>Data Entry</span>
-                          </Link>
-                          <button
-                            onClick={(e) => openOperatorsModal(parent, e)}
-                            title="Overview & Reports"
-                            className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1.5 border border-emerald-200/80 transition-all cursor-pointer shadow-2xs group/btn shrink-0"
-                          >
-                            <Layers className="w-3.5 h-3.5 text-emerald-600 group-hover/btn:scale-110 transition-transform" />
-                            <span>Overview & Reports</span>
-                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeletingParent(parent);
                             }}
                             title="Delete Parent Opportunity"
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 -mr-1 -mt-0.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer shrink-0"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <h3 className="text-lg font-black text-slate-900 group-hover:text-blue-700 transition-colors leading-snug break-words">
+                          {parent.name}
+                        </h3>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link
+                            to={`/app/dataEntry?parent=${parent.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            title="Open in Data Entry Module"
+                            className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#002B66] font-bold text-xs flex items-center gap-1.5 border border-blue-200/80 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                          >
+                            <Database className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span>Data Entry</span>
+                          </Link>
+                          <button
+                            onClick={(e) => openOperatorsModal(parent, e)}
+                            title="Overview & Reports"
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1.5 border border-emerald-200/80 transition-all cursor-pointer shadow-2xs group/btn whitespace-nowrap"
+                          >
+                            <Layers className="w-3.5 h-3.5 text-emerald-600 group-hover/btn:scale-110 transition-transform shrink-0" />
+                            <span>Overview & Reports</span>
                           </button>
                         </div>
                       </div>
@@ -935,10 +1022,11 @@ export const InvestmentManagement: React.FC = () => {
                           onClick={() => setViewingChildProject(child)}
                           className="w-full h-44 relative overflow-hidden bg-slate-100 cursor-pointer"
                         >
-                          <img
-                            src={resolveImageUrl(child.image_path)}
+                          <ProjectImage
+                            src={child.image_path}
                             alt={child.project_name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            fallbackClassName="pt-4"
                           />
                           <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs text-slate-800 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-lg shadow-xs">
                             {child.municipality?.name || child.location || "Capiz"}
@@ -1281,19 +1369,30 @@ export const InvestmentManagement: React.FC = () => {
                   <div className="flex items-center gap-4">
                     {childImagePreview ? (
                       <div className="w-20 h-20 rounded-xl overflow-hidden border border-slate-200 relative shrink-0">
-                        <img
+                        <ProjectImage
                           src={childImagePreview}
                           alt="Preview"
                           className="w-full h-full object-cover"
+                          compact
                         />
                       </div>
                     ) : (
-                      <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 shrink-0">
-                        <UploadCloud className="w-6 h-6" />
+                      <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex flex-col items-center justify-center gap-1 text-slate-400 shrink-0 px-1 text-center">
+                        {editingChildId ? (
+                          <>
+                            <ImageOff className="w-5 h-5" />
+                            <span className="text-[9px] font-bold leading-tight uppercase tracking-wide">
+                              No Image
+                            </span>
+                          </>
+                        ) : (
+                          <UploadCloud className="w-6 h-6" />
+                        )}
                       </div>
                     )}
                     <div className="flex-1">
                       <input
+                        ref={childImageInputRef}
                         type="file"
                         accept="image/*"
                         onChange={(e) => {
@@ -1301,11 +1400,32 @@ export const InvestmentManagement: React.FC = () => {
                           if (file) {
                             setChildImageFile(file);
                             setChildImagePreview(URL.createObjectURL(file));
+                            setRemoveChildImage(false);
                           }
                         }}
                         className="text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                       />
-                      <p className="text-[11px] text-slate-400 mt-1">PNG, JPG, or WEBP up to 5MB.</p>
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        <p className="text-[11px] text-slate-400">PNG, JPG, or WEBP up to 5MB.</p>
+                        {childImagePreview && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setChildImageFile(null);
+                              setChildImagePreview(null);
+                              if (editingChildId) {
+                                setRemoveChildImage(true);
+                              }
+                              if (childImageInputRef.current) {
+                                childImageInputRef.current.value = "";
+                              }
+                            }}
+                            className="text-[11px] font-bold text-red-600 hover:text-red-700 cursor-pointer"
+                          >
+                            Remove image
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1358,8 +1478,8 @@ export const InvestmentManagement: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 {/* Image Banner */}
                 <div className="w-full h-52 rounded-xl overflow-hidden border border-slate-200 relative bg-slate-100">
-                  <img
-                    src={resolveImageUrl(viewingChildProject.image_path)}
+                  <ProjectImage
+                    src={viewingChildProject.image_path}
                     alt={viewingChildProject.project_name}
                     className="w-full h-full object-cover"
                   />
@@ -1623,7 +1743,8 @@ export const InvestmentManagement: React.FC = () => {
                 uploadOnly={true}
                 onClose={() => setSpreadsheetModalProject(null)}
                 onSaved={() => {
-                  loadData();
+                  loadData({ silent: true });
+                  publishLiveSync(["opportunities", "dashboard"]);
                 }}
               />
             </div>

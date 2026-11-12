@@ -80,6 +80,12 @@ class UserAuthController extends Controller
             ]);
         }
 
+        if ($user->isStaff()) {
+            throw ValidationException::withMessages([
+                'email' => ['PEDIPO Staff accounts must sign in through the Staff/Admin login page.'],
+            ]);
+        }
+
         // 4. Generate a secure token for this user
         $token = $user->createToken('user_auth_token')->plainTextToken;
 

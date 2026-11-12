@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Calendar, 
@@ -8,28 +8,46 @@ import {
 } from "lucide-react";
 import { NewsService, type NewsArticleData } from "@/services/NewsService";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 import logo from "../assets/logo.jpg";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 export const NewsList: React.FC = () => {
   const navigate = useNavigate();
   const [articles, setArticles] = useState<NewsArticleData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        const res = await NewsService.getAll();
-        if (res.articles) {
-          setArticles(res.articles);
-        }
-      } catch (error) {
-        console.error("Failed to load news articles:", error);
-      } finally {
+  const fetchArticles = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    try {
+      const res = await NewsService.getAll();
+      if (res.articles) {
+        setArticles(res.articles);
+      }
+    } catch (error) {
+      console.error("Failed to load news articles:", error);
+    } finally {
+      if (!silent) {
         setIsLoading(false);
       }
-    };
-    fetchArticles();
+    }
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) {
+        void fetchArticles();
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [fetchArticles]);
+
+  useLiveSync(["news", "all"], () => fetchArticles({ silent: true }), {
+    pollIntervalMs: 15000,
+  });
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "July 20, 2026";
@@ -38,14 +56,6 @@ export const NewsList: React.FC = () => {
       month: "long",
       day: "numeric",
     });
-  };
-
-  const resolveNewsImage = (path?: string) => {
-    if (!path) return "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80";
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
-    }
-    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
   };
 
   if (isLoading) {
@@ -104,9 +114,9 @@ export const NewsList: React.FC = () => {
               >
                 <div>
                   <div className="relative h-48 bg-slate-100 overflow-hidden">
-                    <img 
-                      src={resolveNewsImage(article.image_path)} 
-                      alt={article.title} 
+                    <ProjectImage
+                      src={article.image_path}
+                      alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>

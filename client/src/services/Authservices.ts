@@ -1,5 +1,7 @@
 import { ApiHandler } from "../api/ApiHandler";
 
+export type ManagementRole = "admin" | "staff";
+
 /**
  * Authentication Response Type
  */
@@ -8,8 +10,10 @@ export interface LoginResponse {
   token_type: string;
   user: {
     id: number;
-    name: string;
+    name?: string;
+    fullname?: string;
     email: string;
+    role?: ManagementRole;
     [key: string]: any;
   };
 }
@@ -72,5 +76,29 @@ export const AuthService = {
   isAuthenticated: () => {
     const token = localStorage.getItem("token");
     return !!token;
-  }
+  },
+
+  /**
+   * Get the authenticated management role ("admin" or "staff").
+   */
+  getRole: (): ManagementRole | null => {
+    if (!AuthService.isAuthenticated()) return null;
+    const user = AuthService.getUser();
+    if (user?.role === "staff") return "staff";
+    return "admin";
+  },
+
+  /**
+   * Check whether the current user is a full Administrator.
+   */
+  isAdmin: () => {
+    return AuthService.getRole() === "admin";
+  },
+
+  /**
+   * Check whether the current user is PEDIPO Staff.
+   */
+  isStaff: () => {
+    return AuthService.getRole() === "staff";
+  },
 };

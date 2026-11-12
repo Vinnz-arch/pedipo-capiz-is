@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Opportunity extends Model
 {
@@ -67,5 +68,20 @@ class Opportunity extends Model
     public function getMunicipalityAttribute()
     {
         return Municipality::find($this->municipality_id);
+    }
+
+    /**
+     * Delete the project's stored local image file when present.
+     */
+    public function deleteStoredImageFile(): void
+    {
+        if (!$this->image_path || !str_starts_with($this->image_path, '/storage/')) {
+            return;
+        }
+
+        $relativePath = substr($this->image_path, strlen('/storage/'));
+        if (Storage::disk('public')->exists($relativePath)) {
+            Storage::disk('public')->delete($relativePath);
+        }
     }
 }

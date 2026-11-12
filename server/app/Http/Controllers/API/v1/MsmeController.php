@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMsmeRequest;
 use App\Http\Requests\UpdateMsmeRequest;
 use App\Http\Resources\MsmeResource;
+use App\Support\PublicMedia;
 use App\Models\Msme;
 use App\Models\Municipality;
 use Illuminate\Http\JsonResponse;
@@ -252,76 +253,26 @@ class MsmeController extends Controller
 
         $validated = $request->validated();
 
-        if ($request->hasFile('logo')) {
-            // Delete old logo
-            if ($msme->logo_path && !str_starts_with($msme->logo_path, 'http')) {
-                $oldPath = public_path($msme->logo_path);
-                if (file_exists($oldPath)) {
-                    @unlink($oldPath);
-                }
+        $imageSlots = [
+            ['input' => 'logo', 'column' => 'logo_path', 'prefix' => 'msme_logo_', 'remove' => 'remove_logo'],
+            ['input' => 'cover', 'column' => 'cover_path', 'prefix' => 'msme_cover_', 'remove' => 'remove_cover'],
+            ['input' => 'product_image_1', 'column' => 'product_image_1', 'prefix' => 'msme_prod1_', 'remove' => 'remove_product_image_1'],
+            ['input' => 'product_image_2', 'column' => 'product_image_2', 'prefix' => 'msme_prod2_', 'remove' => 'remove_product_image_2'],
+            ['input' => 'product_image_3', 'column' => 'product_image_3', 'prefix' => 'msme_prod3_', 'remove' => 'remove_product_image_3'],
+        ];
+
+        foreach ($imageSlots as $slot) {
+            $column = $slot['column'];
+            if ($request->hasFile($slot['input'])) {
+                PublicMedia::deleteIfLocal($msme->{$column});
+                $file = $request->file($slot['input']);
+                $fileName = $slot['prefix'] . time() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('storage/msme'), $fileName);
+                $msme->{$column} = '/storage/msme/' . $fileName;
+            } elseif ($request->boolean($slot['remove'])) {
+                PublicMedia::deleteIfLocal($msme->{$column});
+                $msme->{$column} = null;
             }
-
-            $file = $request->file('logo');
-            $fileName = 'msme_logo_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('storage/msme'), $fileName);
-            $msme->logo_path = '/storage/msme/' . $fileName;
-        }
-
-        if ($request->hasFile('cover')) {
-            // Delete old cover
-            if ($msme->cover_path && !str_starts_with($msme->cover_path, 'http')) {
-                $oldPath = public_path($msme->cover_path);
-                if (file_exists($oldPath)) {
-                    @unlink($oldPath);
-                }
-            }
-
-            $file = $request->file('cover');
-            $fileName = 'msme_cover_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('storage/msme'), $fileName);
-            $msme->cover_path = '/storage/msme/' . $fileName;
-        }
-
-        if ($request->hasFile('product_image_1')) {
-            // Delete old
-            if ($msme->product_image_1 && !str_starts_with($msme->product_image_1, 'http')) {
-                $oldPath = public_path($msme->product_image_1);
-                if (file_exists($oldPath)) {
-                    @unlink($oldPath);
-                }
-            }
-            $file = $request->file('product_image_1');
-            $fileName = 'msme_prod1_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('storage/msme'), $fileName);
-            $msme->product_image_1 = '/storage/msme/' . $fileName;
-        }
-
-        if ($request->hasFile('product_image_2')) {
-            // Delete old
-            if ($msme->product_image_2 && !str_starts_with($msme->product_image_2, 'http')) {
-                $oldPath = public_path($msme->product_image_2);
-                if (file_exists($oldPath)) {
-                    @unlink($oldPath);
-                }
-            }
-            $file = $request->file('product_image_2');
-            $fileName = 'msme_prod2_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('storage/msme'), $fileName);
-            $msme->product_image_2 = '/storage/msme/' . $fileName;
-        }
-
-        if ($request->hasFile('product_image_3')) {
-            // Delete old
-            if ($msme->product_image_3 && !str_starts_with($msme->product_image_3, 'http')) {
-                $oldPath = public_path($msme->product_image_3);
-                if (file_exists($oldPath)) {
-                    @unlink($oldPath);
-                }
-            }
-            $file = $request->file('product_image_3');
-            $fileName = 'msme_prod3_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('storage/msme'), $fileName);
-            $msme->product_image_3 = '/storage/msme/' . $fileName;
         }
 
         $msme->update([

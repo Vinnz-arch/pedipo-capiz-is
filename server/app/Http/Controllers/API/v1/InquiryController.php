@@ -18,6 +18,10 @@ class InquiryController extends Controller
 
         if ($user instanceof \App\Models\Admin) {
             $inquiries = Inquiry::with('opportunity.category')->latest()->get();
+        } elseif ($user instanceof \App\Models\User && $user->isStaff()) {
+            return response()->json([
+                'message' => 'Forbidden. You do not have permission to access inquiries.',
+            ], 403);
         } else {
             $inquiries = Inquiry::with('opportunity.category')
                 ->where(function ($q) use ($user) {

@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\API\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\NewsArticle;
 use App\Models\NewsComment;
+use App\Models\User;
+use App\Support\PublicMedia;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,8 +21,12 @@ class NewsController extends Controller
     {
         $query = NewsArticle::query();
 
-        // If not authenticated as Admin, show only Published articles
-        if (!$request->user('sanctum')) {
+        $authenticated = $request->user('sanctum');
+        $canViewDrafts = $authenticated instanceof Admin
+            || ($authenticated instanceof User && $authenticated->isStaff());
+
+        // Show Draft articles only to authenticated Admin and PEDIPO Staff
+        if (! $canViewDrafts) {
             $query->where('status', 'Published');
         }
 
@@ -117,6 +124,7 @@ class NewsController extends Controller
             'status' => 'nullable|string|in:Published,Draft',
             'published_at' => 'nullable|date',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
+            'remove_image' => 'nullable|boolean',
             'source_name' => 'nullable|string|max:255',
             'source_url' => 'nullable|url|max:255',
         ]);
@@ -134,18 +142,15 @@ class NewsController extends Controller
         }
 
         if ($request->hasFile('image')) {
-            // Delete old file if local
-            if ($article->image_path && !str_starts_with($article->image_path, 'http')) {
-                $oldPath = public_path($article->image_path);
-                if (file_exists($oldPath)) {
-                    @unlink($oldPath);
-                }
-            }
+            PublicMedia::deleteIfLocal($article->image_path);
 
             $file = $request->file('image');
             $fileName = 'news_' . time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('storage/news'), $fileName);
             $article->image_path = '/storage/news/' . $fileName;
+        } elseif ($request->boolean('remove_image')) {
+            PublicMedia::deleteIfLocal($article->image_path);
+            $article->image_path = null;
         }
 
         $article->save();
@@ -169,13 +174,7 @@ class NewsController extends Controller
             ], 404);
         }
 
-        // Delete local cover image
-        if ($article->image_path && !str_starts_with($article->image_path, 'http')) {
-            $oldPath = public_path($article->image_path);
-            if (file_exists($oldPath)) {
-                @unlink($oldPath);
-            }
-        }
+        PublicMedia::deleteIfLocal($article->image_path);
 
         $article->delete();
 

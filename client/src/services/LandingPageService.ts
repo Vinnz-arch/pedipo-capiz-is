@@ -23,9 +23,9 @@ export interface LandingPageSettingData {
   contact_facebook?: string;
   contact_twitter?: string;
   contact_linkedin?: string;
-  hero_image_path?: string;
-  msme_image_path?: string;
-  mandate_image_path?: string;
+  hero_image_path?: string | null;
+  msme_image_path?: string | null;
+  mandate_image_path?: string | null;
   division_1_title: string;
   division_1_subtitle: string;
   division_1_bullets: string;

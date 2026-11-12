@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -38,5 +39,21 @@ class User extends Authenticatable
     public function logs()
     {
         return $this->hasMany(UserLog::class, 'user_id');
+    }
+
+    /**
+     * Check whether this user is a PEDIPO Staff account.
+     */
+    public function isStaff(): bool
+    {
+        return $this->role === UserRole::STAFF->value;
+    }
+
+    /**
+     * Check whether this user is a standard portal user.
+     */
+    public function isPortalUser(): bool
+    {
+        return $this->role === UserRole::USER->value || empty($this->role);
     }
 }

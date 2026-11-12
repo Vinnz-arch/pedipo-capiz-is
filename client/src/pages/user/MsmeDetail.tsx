@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
 import { MsmeDirectoryService, type MsmeData } from "@/services/MsmeDirectoryService";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 import { 
   MapPin, 
   Store, 
@@ -18,6 +19,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { notify } from "@/util/notify";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 export const MsmeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,9 +27,12 @@ export const MsmeDetail: React.FC = () => {
   const [otherMsmes, setOtherMsmes] = useState<MsmeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchDetailsAndRecommendations = async () => {
+  const fetchDetailsAndRecommendations = async (options?: { silent?: boolean }) => {
     if (!id) return;
-    setIsLoading(true);
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoading(true);
+    }
     try {
       // Fetch details
       const detailRes = await MsmeDirectoryService.getByIdPublic(id);
@@ -47,7 +52,9 @@ export const MsmeDetail: React.FC = () => {
     } catch (error) {
       console.error("Failed to load profile details:", error);
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -55,56 +62,11 @@ export const MsmeDetail: React.FC = () => {
     fetchDetailsAndRecommendations();
   }, [id]);
 
-  const resolveImageUrl = (path?: string | null) => {
-    if (!path) return "https://images.unsplash.com/photo-1472898965229-f9b06b9c9bbe?auto=format&fit=crop&w=200&q=80";
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
-    }
-    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
-  };
-
-  // Stock photography mapping to represent sectors for the cover banner
-  const getCategoryCoverImage = (categoryName?: string) => {
-    const defaultImages: Record<string, string> = {
-      "Agri-Industrial": "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80",
-      "Agri-Business": "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80",
-      "Tourism/Hospitality": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
-      "Tourism": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
-      "Manufacturing": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80",
-      "Information Tech": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
-      "Commercial": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80",
-      "Services": "https://images.unsplash.com/photo-1521791136368-1a851900d14d?auto=format&fit=crop&w=1200&q=80",
-      "Infrastructure": "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&w=1200&q=80"
-    };
-
-    if (categoryName && defaultImages[categoryName]) {
-      return defaultImages[categoryName];
-    }
-    return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80";
-  };
-
-  // Stock photography mapping for products
-  const getProductGridImages = (categoryName?: string) => {
-    const agriPics = [
-      "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1589152121541-ec9055e927c7?auto=format&fit=crop&w=400&q=80"
-    ];
-    const manufacturingPics = [
-      "https://images.unsplash.com/photo-1608748010899-18f300247112?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1525562723836-dca67a71d5f1?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=400&q=80"
-    ];
-    const techPics = [
-      "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=400&q=80"
-    ];
-    
-    if (categoryName === "Manufacturing") return manufacturingPics;
-    if (categoryName === "Information Tech" || categoryName === "Services") return techPics;
-    return agriPics;
-  };
+  useLiveSync(
+    ["msmes", "all"],
+    () => fetchDetailsAndRecommendations({ silent: true }),
+    { pollIntervalMs: 15000 }
+  );
 
   // Maps URL Redirect
   const handleViewOnMap = () => {
@@ -152,26 +114,7 @@ export const MsmeDetail: React.FC = () => {
     );
   }
 
-  const coverBanner = msme.cover_path ? resolveImageUrl(msme.cover_path) : getCategoryCoverImage(msme.category?.name);
-
-  // Load custom product images, or fall back to stock category photos
-  const getProductImageUrls = () => {
-    const urls: string[] = [];
-    if (msme.product_image_1) urls.push(resolveImageUrl(msme.product_image_1));
-    if (msme.product_image_2) urls.push(resolveImageUrl(msme.product_image_2));
-    if (msme.product_image_3) urls.push(resolveImageUrl(msme.product_image_3));
-    
-    // Fill remaining slots with stock photos
-    const fallbacks = getProductGridImages(msme.category?.name);
-    let i = 0;
-    while (urls.length < 3 && i < fallbacks.length) {
-      urls.push(fallbacks[i]);
-      i++;
-    }
-    return urls;
-  };
-
-  const productPics = getProductImageUrls();
+  const productPics = [msme.product_image_1, msme.product_image_2, msme.product_image_3];
 
   // Determine mock stats based on enterprise size
   const metrics = msme.enterprise_type === "Micro" 
@@ -198,23 +141,21 @@ export const MsmeDetail: React.FC = () => {
           
           {/* Banner picture */}
           <div className="h-64 w-full relative overflow-hidden rounded-t-3xl bg-slate-200">
-            <img
-              src={coverBanner}
-              alt="Cover backdrop"
+            <ProjectImage
+              src={msme.cover_path}
+              alt={`${msme.business_name} cover backdrop`}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/15 to-transparent"></div>
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/15 to-transparent"></div>
           </div>
 
           {/* Floating Logo overlay - absolute positioned overlapping bottom of banner */}
-          <div className="absolute left-8 top-44 w-32 h-32 md:w-36 md:h-36 bg-white rounded-2xl p-2 shadow-2xl border border-slate-100 flex items-center justify-center z-10">
-            <img
-              src={resolveImageUrl(msme.logo_path)}
-              alt="Business Brand Logo"
+          <div className="absolute left-8 top-44 w-32 h-32 md:w-36 md:h-36 bg-white rounded-2xl p-2 shadow-2xl border border-slate-100 overflow-hidden flex items-center justify-center z-10">
+            <ProjectImage
+              src={msme.logo_path}
+              alt={`${msme.business_name} logo`}
               className="max-w-full max-h-full object-contain rounded-xl"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1472898965229-f9b06b9c9bbe?auto=format&fit=crop&w=200&q=80";
-              }}
+              fallbackClassName="rounded-xl px-2"
             />
           </div>
 
@@ -338,13 +279,13 @@ export const MsmeDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* 3 image row matching product display in screenshot */}
+              {/* 3 image row matching product display */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {productPics.map((pic, idx) => (
                   <div key={idx} className="h-44 rounded-2xl overflow-hidden bg-slate-100 border border-slate-100 shadow-xs">
-                    <img
+                    <ProjectImage
                       src={pic}
-                      alt="Featured product showcase"
+                      alt={`Featured product ${idx + 1}`}
                       className="w-full h-full object-cover hover:scale-105 transition-all duration-300"
                     />
                   </div>
@@ -474,16 +415,14 @@ export const MsmeDetail: React.FC = () => {
             <h2 className="text-xl font-black text-slate-800 tracking-tight">Explore Other MSMEs</h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {otherMsmes.map((rec) => {
-                const recCover = getCategoryCoverImage(rec.category?.name);
-                return (
+              {otherMsmes.map((rec) => (
                   <div 
                     key={rec.id}
                     className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs hover:shadow-lg transition-all group flex flex-col justify-between"
                   >
                     <div className="h-28 w-full overflow-hidden bg-slate-100 shrink-0">
-                      <img
-                        src={recCover}
+                      <ProjectImage
+                        src={rec.cover_path}
                         alt={rec.business_name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
                       />
@@ -506,8 +445,7 @@ export const MsmeDetail: React.FC = () => {
                       </Link>
                     </div>
                   </div>
-                );
-              })}
+              ))}
             </div>
           </div>
         )}

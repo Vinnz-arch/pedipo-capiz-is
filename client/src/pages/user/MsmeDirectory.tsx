@@ -5,6 +5,7 @@ import { MsmeDirectoryService, type MsmeData } from "@/services/MsmeDirectorySer
 import { MunicipalityService, type MunicipalityData } from "@/services/MunicipalityService";
 import { OpportunityService, type CategoryData } from "@/services/OpportunityService";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 import { 
   Search, 
   MapPin, 
@@ -15,6 +16,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { notify } from "@/util/notify";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 export const MsmeDirectory: React.FC = () => {
   const [msmes, setMsmes] = useState<MsmeData[]>([]);
@@ -46,8 +48,11 @@ export const MsmeDirectory: React.FC = () => {
     }
   };
 
-  const fetchPublicMsmes = async () => {
-    setIsLoading(true);
+  const fetchPublicMsmes = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoading(true);
+    }
     try {
       const params = {
         search: searchQuery,
@@ -67,7 +72,9 @@ export const MsmeDirectory: React.FC = () => {
     } catch (error) {
       console.error("Failed to retrieve public MSMEs:", error);
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -79,33 +86,9 @@ export const MsmeDirectory: React.FC = () => {
     fetchPublicMsmes();
   }, [searchQuery, selectedMuni, selectedCategory, selectedSize, currentPage]);
 
-  const resolveImageUrl = (path?: string | null) => {
-    if (!path) return "https://images.unsplash.com/photo-1472898965229-f9b06b9c9bbe?auto=format&fit=crop&w=200&q=80";
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
-    }
-    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
-  };
-
-  // Stock photography mapping to represent sectors
-  const getCategoryCoverImage = (categoryName?: string) => {
-    const defaultImages: Record<string, string> = {
-      "Agri-Industrial": "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&q=80",
-      "Agri-Business": "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&q=80",
-      "Tourism/Hospitality": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
-      "Tourism": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
-      "Manufacturing": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80",
-      "Information Tech": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80",
-      "Commercial": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80",
-      "Services": "https://images.unsplash.com/photo-1521791136368-1a851900d14d?auto=format&fit=crop&w=600&q=80",
-      "Infrastructure": "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&w=600&q=80"
-    };
-
-    if (categoryName && defaultImages[categoryName]) {
-      return defaultImages[categoryName];
-    }
-    return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80";
-  };
+  useLiveSync(["msmes", "all"], () => fetchPublicMsmes({ silent: true }), {
+    pollIntervalMs: 15000,
+  });
 
   const handleFilterChange = () => {
     setCurrentPage(1);
@@ -197,9 +180,7 @@ export const MsmeDirectory: React.FC = () => {
             
             {/* 3 Column Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {msmes.map((msme) => {
-                const coverImage = msme.cover_path ? resolveImageUrl(msme.cover_path) : getCategoryCoverImage(msme.category?.name);
-                return (
+              {msmes.map((msme) => (
                   <div 
                     key={msme.id} 
                     className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-500/10 transition-all duration-300 group flex flex-col justify-between overflow-hidden text-slate-800"
@@ -207,29 +188,27 @@ export const MsmeDirectory: React.FC = () => {
                     
                     {/* Visual Cover Header Block */}
                     <div className="h-44 w-full relative overflow-hidden bg-slate-100 shrink-0">
-                      <img
-                        src={coverImage}
-                        alt="cover"
+                      <ProjectImage
+                        src={msme.cover_path}
+                        alt={`${msme.business_name} cover`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                       />
-                      {/* Black soft overlay for text readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10"></div>
+                      {/* Soft overlay for visual depth */}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10"></div>
                       
                       {/* Translucent pill category badge */}
-                      <span className="absolute top-4 left-4 backdrop-blur-md bg-white/20 text-white border border-white/20 shadow-sm font-extrabold text-[9px] px-3 py-1 rounded-full uppercase tracking-wider">
+                      <span className="absolute top-4 left-4 backdrop-blur-md bg-slate-900/75 text-white border border-white/20 shadow-sm font-extrabold text-[9px] px-3 py-1 rounded-full uppercase tracking-wider">
                         {msme.category?.name || "Sector"}
                       </span>
 
                       {/* Small floating logo overlay on bottom-right of picture */}
-                      <div className="absolute right-4 bottom-4 w-12 h-10 bg-white rounded-lg p-1 shadow-md border border-slate-100 flex items-center justify-center">
-                        <img
-                          src={resolveImageUrl(msme.logo_path)}
-                          alt="logo symbol"
+                      <div className="absolute right-4 bottom-4 w-12 h-10 bg-white rounded-lg p-1 shadow-md border border-slate-100 overflow-hidden flex items-center justify-center">
+                        <ProjectImage
+                          src={msme.logo_path}
+                          alt={`${msme.business_name} logo`}
                           className="max-w-full max-h-full object-contain rounded"
-                          onError={(e) => {
-                            // fallback image
-                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1472898965229-f9b06b9c9bbe?auto=format&fit=crop&w=100&q=80";
-                          }}
+                          fallbackClassName="rounded"
+                          compact
                         />
                       </div>
                     </div>
@@ -267,8 +246,7 @@ export const MsmeDirectory: React.FC = () => {
                     </div>
 
                   </div>
-                );
-              })}
+              ))}
             </div>
 
             {/* Premium centered pagination matching reference design */}

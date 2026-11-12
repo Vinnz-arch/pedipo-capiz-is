@@ -35,6 +35,8 @@ import {
 } from "@/services/OpportunityService";
 import { SpreadsheetGrid } from "@/components/spreadsheet/SpreadsheetGrid";
 import { PATHS } from "@/routes/paths";
+import { publishLiveSync } from "@/util/liveSync";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 interface ActiveSpreadsheetTarget {
   id: number | string;
@@ -73,8 +75,11 @@ export const DataEntry: React.FC = () => {
   const [isAssigning, setIsAssigning] = useState<boolean>(false);
 
   // Fetch all parent opportunities and child projects
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoading(true);
+    }
     try {
       const res = await OpportunityService.getAllParents();
       if (res) {
@@ -94,13 +99,19 @@ export const DataEntry: React.FC = () => {
       console.error("Failed to load opportunities for data entry:", err);
       notify.error("Load Error", "Failed to retrieve synchronized opportunities.");
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useLiveSync(["opportunities", "all"], () => loadData({ silent: true }), {
+    pollIntervalMs: 15000,
+  });
 
   // Handle URL Deep-linking (?parent=ID or ?opp=ID)
   useEffect(() => {
@@ -221,7 +232,8 @@ export const DataEntry: React.FC = () => {
         "Sector Sheet Uploaded",
         `Successfully loaded ${parsed.rows.length} rows into ${parent.name} Annual Reports.`
       );
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (err: any) {
       console.error("Parent spreadsheet upload failed:", err);
       notify.error("Upload Error", err.message || "Failed to process sector spreadsheet file.");
@@ -259,7 +271,8 @@ export const DataEntry: React.FC = () => {
         "Project Data Sheet Uploaded",
         `Successfully loaded ${parsed.rows.length} records into ${opp.project_name}.`
       );
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (err: any) {
       console.error("Direct child spreadsheet upload failed:", err);
       notify.error("Upload Error", err.message || "Failed to process spreadsheet file.");
@@ -282,7 +295,8 @@ export const DataEntry: React.FC = () => {
 
     try {
       await OpportunityService.deleteOpportunitySpreadsheet(opp.id);
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (err: any) {
       console.error("Failed to delete child spreadsheet:", err);
       notify.error("Delete Failed", err.message || "Could not remove data sheet.");
@@ -301,7 +315,8 @@ export const DataEntry: React.FC = () => {
 
     try {
       await OpportunityService.deleteParentOperatorsSpreadsheet(parent.id);
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (err: any) {
       console.error("Failed to delete parent spreadsheet:", err);
       notify.error("Delete Failed", err.message || "Could not remove sector sheet.");
@@ -321,7 +336,8 @@ export const DataEntry: React.FC = () => {
       notify.success("Project Assigned", "Project successfully assigned to the selected Opportunity Group.");
       setAssigningChildId(null);
       setSelectedAssignParentId("");
-      await loadData();
+      await loadData({ silent: true });
+      publishLiveSync(["opportunities", "dashboard"]);
     } catch (err) {
       console.error("Failed to assign project to parent:", err);
       notify.error("Assign Failed", "Could not assign project to Opportunity Group.");
@@ -449,7 +465,7 @@ export const DataEntry: React.FC = () => {
             </Link>
 
             <button
-              onClick={loadData}
+              onClick={() => loadData()}
               disabled={isLoading}
               title="Refresh Synchronized Opportunities"
               className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white transition-all cursor-pointer shrink-0"
@@ -1287,7 +1303,8 @@ export const DataEntry: React.FC = () => {
                 initialYear={activeSpreadsheet.initialYear}
                 onClose={() => setActiveSpreadsheet(null)}
                 onSaved={() => {
-                  loadData();
+                  loadData({ silent: true });
+                  publishLiveSync(["opportunities", "dashboard"]);
                 }}
               />
             </div>

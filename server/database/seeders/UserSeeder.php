@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -23,7 +24,18 @@ class UserSeeder extends Seeder
                 'fullname' => 'Test Client',
                 'username' => 'testclient',
                 'password' => Hash::make('password123'),
-                'role' => 'user',
+                'role' => UserRole::USER->value,
+            ]
+        );
+
+        // Create 1 default PEDIPO Staff user
+        User::updateOrCreate(
+            ['email' => 'staff@pedipo.com'],
+            [
+                'fullname' => 'PEDIPO Staff',
+                'username' => 'pedipostaff',
+                'password' => Hash::make('password123'),
+                'role' => UserRole::STAFF->value,
             ]
         );
     }

@@ -76,80 +76,94 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/v1/logout', [AuthController::class, 'logout']);
     Route::post('/v1/user/logout', [UserAuthController::class, 'logout']);
 
-    // In-App Notifications
-    Route::get('/v1/notifications', [NotificationController::class, 'index']);
-    Route::patch('/v1/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
-    Route::patch('/v1/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::delete('/v1/notifications/{id}', [NotificationController::class, 'destroy']);
+    // Portal User & Admin shared routes (blocked for PEDIPO Staff)
+    Route::middleware('role:admin,user')->group(function () {
+        // In-App Notifications
+        Route::get('/v1/notifications', [NotificationController::class, 'index']);
+        Route::patch('/v1/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::patch('/v1/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::delete('/v1/notifications/{id}', [NotificationController::class, 'destroy']);
 
-    // Users CRUD
-    Route::apiResource('/v1/users', UserController::class);
-    Route::get('/v1/users/{user}/logs', [UserLogController::class, 'index']);
+        // Inquiries (Admin sees all, Portal User sees own)
+        Route::get('/v1/inquiries', [InquiryController::class, 'index']);
+        Route::post('/v1/inquiries', [InquiryController::class, 'store']);
 
-    // Parent Opportunities CRUD & Nested Child Projects
-    Route::post('/v1/parent-opportunities', [ParentOpportunityController::class, 'store']);
-    Route::put('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'update']);
-    Route::post('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'update']); // for multipart
-    Route::delete('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'destroy']);
-    Route::post('/v1/parent-opportunities/{parentOpportunity}/projects', [ParentOpportunityController::class, 'storeChildProject']);
-    Route::put('/v1/child-projects/{project}', [ParentOpportunityController::class, 'updateChildProject']);
-    Route::post('/v1/child-projects/{project}', [ParentOpportunityController::class, 'updateChildProject']); // for multipart
-    Route::put('/v1/child-projects/{project}/move', [ParentOpportunityController::class, 'moveChildProject']);
-    Route::delete('/v1/child-projects/{project}', [ParentOpportunityController::class, 'destroyChildProject']);
+        // MSME Assistance Requests (Admin sees all, Portal User manages own)
+        Route::get('/v1/msme-requests', [MsmeAssistanceRequestController::class, 'index']);
+        Route::post('/v1/msme-requests', [MsmeAssistanceRequestController::class, 'store']);
+        Route::get('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'show']);
+        Route::put('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']);
+        Route::post('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']); // for multipart update if needed
+        Route::delete('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'destroy']);
+    });
 
-    // Parent Opportunities Operators & Production Data & Documents
-    Route::put('/v1/parent-opportunities/{id}/operators-and-production', [ParentOpportunityController::class, 'updateOperatorsAndProduction']);
-    Route::post('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet/upload', [ParentOpportunityController::class, 'uploadSpreadsheet']);
-    Route::delete('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet/files/{fileId}', [ParentOpportunityController::class, 'deleteSpreadsheetFile']);
-    Route::delete('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet', [ParentOpportunityController::class, 'deleteSpreadsheet']);
-    Route::post('/v1/parent-opportunities/{id}/documents', [ParentOpportunityController::class, 'uploadDocument']);
-    Route::delete('/v1/parent-opportunities/{id}/documents/{documentId}', [ParentOpportunityController::class, 'deleteDocument']);
+    // Admin-only routes (Users management, User logs, Inquiry review/deletion)
+    Route::middleware('role:admin')->group(function () {
+        // Users CRUD
+        Route::apiResource('/v1/users', UserController::class);
+        Route::get('/v1/users/{user}/logs', [UserLogController::class, 'index']);
 
-    // Opportunities CRUD & Sync
-    Route::post('/v1/opportunities/sync', [OpportunityController::class, 'syncPortal']);
-    Route::post('/v1/opportunities', [OpportunityController::class, 'store']);
-    Route::put('/v1/opportunities/{opportunity}', [OpportunityController::class, 'update']);
-    Route::post('/v1/opportunities/{opportunity}', [OpportunityController::class, 'update']); // for multipart form-data
-    Route::delete('/v1/opportunities/{opportunity}', [OpportunityController::class, 'destroy']);
-    Route::put('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'updateSpreadsheet']);
-    Route::delete('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'deleteSpreadsheet']);
-    Route::post('/v1/opportunities/{id}/spreadsheet/upload', [OpportunityController::class, 'uploadSpreadsheet']);
-    Route::post('/v1/opportunities/{id}/documents', [OpportunityController::class, 'uploadDocument']);
-    Route::delete('/v1/opportunities/{id}/documents/{documentId}', [OpportunityController::class, 'deleteDocument']);
+        // Inquiries Admin Review & Deletion
+        Route::get('/v1/inquiries/{inquiry}', [InquiryController::class, 'show']);
+        Route::put('/v1/inquiries/{inquiry}', [InquiryController::class, 'update']);
+        Route::patch('/v1/inquiries/{inquiry}', [InquiryController::class, 'update']);
+        Route::delete('/v1/inquiries/{inquiry}', [InquiryController::class, 'destroy']);
+    });
 
-    // Inquiries CRUD
-    Route::apiResource('/v1/inquiries', InquiryController::class);
+    // Admin & PEDIPO Staff management routes
+    Route::middleware('role:admin,staff')->group(function () {
+        // Parent Opportunities CRUD & Nested Child Projects
+        Route::post('/v1/parent-opportunities', [ParentOpportunityController::class, 'store']);
+        Route::put('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'update']);
+        Route::post('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'update']); // for multipart
+        Route::delete('/v1/parent-opportunities/{parentOpportunity}', [ParentOpportunityController::class, 'destroy']);
+        Route::post('/v1/parent-opportunities/{parentOpportunity}/projects', [ParentOpportunityController::class, 'storeChildProject']);
+        Route::put('/v1/child-projects/{project}', [ParentOpportunityController::class, 'updateChildProject']);
+        Route::post('/v1/child-projects/{project}', [ParentOpportunityController::class, 'updateChildProject']); // for multipart
+        Route::put('/v1/child-projects/{project}/move', [ParentOpportunityController::class, 'moveChildProject']);
+        Route::delete('/v1/child-projects/{project}', [ParentOpportunityController::class, 'destroyChildProject']);
 
-    // Landing Page CMS
-    Route::put('/v1/landing-settings', [LandingPageController::class, 'updateSettings']);
-    Route::post('/v1/landing-settings', [LandingPageController::class, 'updateSettings']);
+        // Parent Opportunities Operators & Production Data & Documents
+        Route::put('/v1/parent-opportunities/{id}/operators-and-production', [ParentOpportunityController::class, 'updateOperatorsAndProduction']);
+        Route::post('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet/upload', [ParentOpportunityController::class, 'uploadSpreadsheet']);
+        Route::delete('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet/files/{fileId}', [ParentOpportunityController::class, 'deleteSpreadsheetFile']);
+        Route::delete('/v1/parent-opportunities/{id}/operators-and-production/spreadsheet', [ParentOpportunityController::class, 'deleteSpreadsheet']);
+        Route::post('/v1/parent-opportunities/{id}/documents', [ParentOpportunityController::class, 'uploadDocument']);
+        Route::delete('/v1/parent-opportunities/{id}/documents/{documentId}', [ParentOpportunityController::class, 'deleteDocument']);
 
-    // News CRUD (Admin only)
-    Route::post('/v1/news', [NewsController::class, 'store']);
-    Route::put('/v1/news/{id}', [NewsController::class, 'update']);
-    Route::post('/v1/news/{id}', [NewsController::class, 'update']); // for multipart form-data
-    Route::delete('/v1/news/{id}', [NewsController::class, 'destroy']);
+        // Opportunities CRUD & Sync
+        Route::post('/v1/opportunities/sync', [OpportunityController::class, 'syncPortal']);
+        Route::post('/v1/opportunities', [OpportunityController::class, 'store']);
+        Route::put('/v1/opportunities/{opportunity}', [OpportunityController::class, 'update']);
+        Route::post('/v1/opportunities/{opportunity}', [OpportunityController::class, 'update']); // for multipart form-data
+        Route::delete('/v1/opportunities/{opportunity}', [OpportunityController::class, 'destroy']);
+        Route::put('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'updateSpreadsheet']);
+        Route::delete('/v1/opportunities/{id}/spreadsheet', [OpportunityController::class, 'deleteSpreadsheet']);
+        Route::post('/v1/opportunities/{id}/spreadsheet/upload', [OpportunityController::class, 'uploadSpreadsheet']);
+        Route::post('/v1/opportunities/{id}/documents', [OpportunityController::class, 'uploadDocument']);
+        Route::delete('/v1/opportunities/{id}/documents/{documentId}', [OpportunityController::class, 'deleteDocument']);
 
-    // Municipalities CRUD (Removed - table is now a static read-only repository)
+        // Landing Page CMS
+        Route::put('/v1/landing-settings', [LandingPageController::class, 'updateSettings']);
+        Route::post('/v1/landing-settings', [LandingPageController::class, 'updateSettings']);
 
-    // MSME Assistance Requests
-    Route::get('/v1/msme-requests', [MsmeAssistanceRequestController::class, 'index']);
-    Route::post('/v1/msme-requests', [MsmeAssistanceRequestController::class, 'store']);
-    Route::get('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'show']);
-    Route::put('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']);
-    Route::post('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'update']); // for multipart update if needed
-    Route::delete('/v1/msme-requests/{id}', [MsmeAssistanceRequestController::class, 'destroy']);
+        // News CRUD (Admin & Staff)
+        Route::post('/v1/news', [NewsController::class, 'store']);
+        Route::put('/v1/news/{id}', [NewsController::class, 'update']);
+        Route::post('/v1/news/{id}', [NewsController::class, 'update']); // for multipart form-data
+        Route::delete('/v1/news/{id}', [NewsController::class, 'destroy']);
 
-    // MSME CRUD & Archive
-    Route::get('/v1/msmes/dashboard-stats', [MsmeController::class, 'dashboardStats']);
-    Route::apiResource('/v1/msmes', MsmeController::class);
-    Route::post('/v1/msmes/{id}', [MsmeController::class, 'update']);
-    Route::post('/v1/msmes/{id}/archive', [MsmeController::class, 'archive']);
+        // MSME CRUD & Archive
+        Route::get('/v1/msmes/dashboard-stats', [MsmeController::class, 'dashboardStats']);
+        Route::apiResource('/v1/msmes', MsmeController::class);
+        Route::post('/v1/msmes/{id}', [MsmeController::class, 'update']);
+        Route::post('/v1/msmes/{id}/archive', [MsmeController::class, 'archive']);
 
-    // Admin Indicator Manual Upload
-    Route::post('/v1/admin/manual-upload', [AdminManualUploadController::class, 'upload']);
+        // Indicator Manual Upload (Data Entry)
+        Route::post('/v1/admin/manual-upload', [AdminManualUploadController::class, 'upload']);
 
-    // Admin Aggregated Dashboard
-    Route::get('/v1/admin/dashboard', [AdminDashboardController::class, 'index']);
-    Route::post('/v1/admin/dashboard/refresh', [AdminDashboardController::class, 'refresh']);
+        // Aggregated Management Dashboard
+        Route::get('/v1/admin/dashboard', [AdminDashboardController::class, 'index']);
+        Route::post('/v1/admin/dashboard/refresh', [AdminDashboardController::class, 'refresh']);
+    });
 });

@@ -16,6 +16,15 @@ use Illuminate\Support\Facades\Storage;
 class ParentOpportunityController extends Controller
 {
     /**
+     * Clear cached public opportunity lists after any mutation.
+     */
+    private function clearOpportunityCaches(): void
+    {
+        Cache::forget('public_parent_opportunities');
+        Cache::forget('public_opportunities');
+    }
+
+    /**
      * List all parent opportunities with their child projects (Admin).
      */
     public function index(): JsonResponse
@@ -98,11 +107,10 @@ class ParentOpportunityController extends Controller
             'category_id' => $validated['category_id'] ?? null,
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'] ?? 'Published',
-            'image_path' => $imagePath ?? '/images/seafood_hub.png',
+            'image_path' => $imagePath,
         ]);
 
-        Cache::forget('public_parent_opportunities');
-        Cache::forget('public_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Parent opportunity created successfully.',
@@ -164,8 +172,7 @@ class ParentOpportunityController extends Controller
             }
         }
 
-        Cache::forget('public_parent_opportunities');
-        Cache::forget('public_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Parent opportunity updated successfully.',
@@ -186,8 +193,7 @@ class ParentOpportunityController extends Controller
 
         $parentOpportunity->delete();
 
-        Cache::forget('public_parent_opportunities');
-        Cache::forget('public_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Parent opportunity removed successfully.',
@@ -232,11 +238,10 @@ class ParentOpportunityController extends Controller
             'municipality_id' => $validated['municipality_id'] ?? null,
             'location' => $validated['location'] ?? null,
             'description' => $validated['description'] ?? null,
-            'image_path' => $imagePath ?? '/images/seafood_hub.png',
+            'image_path' => $imagePath,
         ]);
 
-        Cache::forget('public_parent_opportunities');
-        Cache::forget('public_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Child project added successfully.',
@@ -259,17 +264,22 @@ class ParentOpportunityController extends Controller
             'location' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'image' => 'nullable|image|max:5120',
+            'remove_image' => 'nullable|boolean',
         ]);
 
+        unset($validated['remove_image']);
         if ($request->hasFile('image')) {
+            $project->deleteStoredImageFile();
             $path = $request->file('image')->store('opportunities', 'public');
             $validated['image_path'] = '/storage/' . $path;
+        } elseif ($request->boolean('remove_image')) {
+            $project->deleteStoredImageFile();
+            $validated['image_path'] = null;
         }
 
         $project->update($validated);
 
-        Cache::forget('public_parent_opportunities');
-        Cache::forget('public_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Child project updated successfully.',
@@ -294,8 +304,7 @@ class ParentOpportunityController extends Controller
             'category_id' => $newParent->category_id ?? $project->category_id,
         ]);
 
-        Cache::forget('public_parent_opportunities');
-        Cache::forget('public_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => "Project successfully moved to {$newParent->name}.",
@@ -310,8 +319,7 @@ class ParentOpportunityController extends Controller
     {
         $project->delete();
 
-        Cache::forget('public_parent_opportunities');
-        Cache::forget('public_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Child project deleted successfully.',
@@ -393,7 +401,7 @@ class ParentOpportunityController extends Controller
         ];
         $parent->save();
 
-        Cache::forget('public_parent_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Overall operators and production data updated successfully.',
@@ -481,7 +489,7 @@ class ParentOpportunityController extends Controller
         ];
         $parent->save();
 
-        Cache::forget('public_parent_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Annual report spreadsheet file(s) uploaded successfully.',
@@ -532,7 +540,7 @@ class ParentOpportunityController extends Controller
         ];
         $parent->save();
 
-        Cache::forget('public_parent_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Annual report file removed successfully.',
@@ -550,7 +558,7 @@ class ParentOpportunityController extends Controller
         $parent->spreadsheet_data = null;
         $parent->save();
 
-        Cache::forget('public_parent_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Annual report spreadsheets removed successfully.',
@@ -588,7 +596,7 @@ class ParentOpportunityController extends Controller
             'file_type' => strtolower($extension),
         ]);
 
-        Cache::forget('public_parent_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Document uploaded successfully.',
@@ -613,7 +621,7 @@ class ParentOpportunityController extends Controller
         }
 
         $document->delete();
-        Cache::forget('public_parent_opportunities');
+        $this->clearOpportunityCaches();
 
         return response()->json([
             'message' => 'Document deleted successfully.',

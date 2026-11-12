@@ -15,7 +15,7 @@ export interface NewsArticleData {
   slug?: string;
   summary: string;
   content: string;
-  image_path?: string;
+  image_path?: string | null;
   author?: string;
   status?: "Published" | "Draft";
   published_at?: string;

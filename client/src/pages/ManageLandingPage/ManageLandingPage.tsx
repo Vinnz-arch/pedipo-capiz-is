@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/Mainlayout";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 import { LandingPageService } from "@/services/LandingPageService";
 import { NewsService, type NewsArticleData } from "@/services/NewsService";
 import { notify } from "@/util/notify";
+import { resolveProjectImageUrl } from "@/util/projectImage";
+import { publishLiveSync } from "@/util/liveSync";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import { 
   Save, 
   Settings, 
@@ -19,8 +23,7 @@ import {
   Trash2,
   Eye,
   X,
-  Upload,
-  FileText
+  Upload
 } from "lucide-react";
 
 export const ManageLandingPage: React.FC = () => {
@@ -36,6 +39,7 @@ export const ManageLandingPage: React.FC = () => {
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [heroImagePreview, setHeroImagePreview] = useState<string | null>(null);
   const [heroImagePath, setHeroImagePath] = useState("");
+  const [removeHeroImage, setRemoveHeroImage] = useState(false);
 
   const [visionText, setVisionText] = useState("");
   const [missionPoint1, setMissionPoint1] = useState("");
@@ -47,11 +51,13 @@ export const ManageLandingPage: React.FC = () => {
   const [msmeImageFile, setMsmeImageFile] = useState<File | null>(null);
   const [msmeImagePreview, setMsmeImagePreview] = useState<string | null>(null);
   const [msmeImagePath, setMsmeImagePath] = useState("");
+  const [removeMsmeImage, setRemoveMsmeImage] = useState(false);
 
   const [mandateText, setMandateText] = useState("");
   const [mandateImageFile, setMandateImageFile] = useState<File | null>(null);
   const [mandateImagePreview, setMandateImagePreview] = useState<string | null>(null);
   const [mandateImagePath, setMandateImagePath] = useState("");
+  const [removeMandateImage, setRemoveMandateImage] = useState(false);
   const [servicePledge1, setServicePledge1] = useState("");
   const [servicePledge2, setServicePledge2] = useState("");
   const [servicePledge3, setServicePledge3] = useState("");
@@ -91,6 +97,7 @@ export const ManageLandingPage: React.FC = () => {
   const [newsPublishedAt, setNewsPublishedAt] = useState("");
   const [newsImageFile, setNewsImageFile] = useState<File | null>(null);
   const [newsImagePreview, setNewsImagePreview] = useState<string | null>(null);
+  const [removeNewsImage, setRemoveNewsImage] = useState(false);
   const [newsSourceName, setNewsSourceName] = useState("");
   const [newsSourceUrl, setNewsSourceUrl] = useState("");
 
@@ -116,13 +123,8 @@ export const ManageLandingPage: React.FC = () => {
           setHeroSubtitle(s.hero_subtitle);
           setHeroDescription(s.hero_description);
           setHeroImagePath(s.hero_image_path || "");
-          if (s.hero_image_path) {
-            setHeroImagePreview(
-              s.hero_image_path.startsWith("http")
-                ? s.hero_image_path
-                : `http://localhost:8000${s.hero_image_path}`
-            );
-          }
+          setHeroImagePreview(resolveProjectImageUrl(s.hero_image_path));
+          setRemoveHeroImage(false);
 
           setVisionText(s.vision_text);
           setMissionPoint1(s.mission_point_1);
@@ -132,22 +134,13 @@ export const ManageLandingPage: React.FC = () => {
           setMsmeTitle(s.msme_title);
           setMsmeDescription(s.msme_description);
           setMsmeImagePath(s.msme_image_path || "");
-          if (s.msme_image_path) {
-            setMsmeImagePreview(
-              s.msme_image_path.startsWith("http")
-                ? s.msme_image_path
-                : `http://localhost:8000${s.msme_image_path}`
-            );
-          }
+          setMsmeImagePreview(resolveProjectImageUrl(s.msme_image_path));
+          setRemoveMsmeImage(false);
+
           setMandateText(s.mandate_text);
           setMandateImagePath(s.mandate_image_path || "");
-          if (s.mandate_image_path) {
-            setMandateImagePreview(
-              s.mandate_image_path.startsWith("http")
-                ? s.mandate_image_path
-                : `http://localhost:8000${s.mandate_image_path}`
-            );
-          }
+          setMandateImagePreview(resolveProjectImageUrl(s.mandate_image_path));
+          setRemoveMandateImage(false);
           setServicePledge1(s.service_pledge_1);
           setServicePledge2(s.service_pledge_2);
           setServicePledge3(s.service_pledge_3);
@@ -182,6 +175,10 @@ export const ManageLandingPage: React.FC = () => {
     loadSettings();
     fetchNews();
   }, []);
+
+  useLiveSync(["news", "all"], () => fetchNews(), {
+    pollIntervalMs: 15000,
+  });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,35 +216,49 @@ export const ManageLandingPage: React.FC = () => {
     formData.append("division_3_subtitle", div3Subtitle.trim());
     formData.append("division_3_bullets", div3Bullets.trim());
 
-    if (heroImagePath) {
-      formData.append("hero_image_path", heroImagePath.trim());
-    }
-    if (heroImageFile) {
-      formData.append("hero_image", heroImageFile);
-    }
-    if (msmeImagePath) {
-      formData.append("msme_image_path", msmeImagePath.trim());
-    }
-    if (msmeImageFile) {
-      formData.append("msme_image", msmeImageFile);
-    }
-    if (mandateImagePath) {
-      formData.append("mandate_image_path", mandateImagePath.trim());
-    }
-    if (mandateImageFile) {
-      formData.append("mandate_image", mandateImageFile);
-    }
+    const appendCmsImage = (
+      pathKey: string,
+      fileKey: string,
+      removeKey: string,
+      pathVal: string,
+      fileVal: File | null,
+      removeVal: boolean
+    ) => {
+      if (fileVal) {
+        formData.append(fileKey, fileVal);
+        return;
+      }
+      const trimmedPath = pathVal.trim();
+      if (removeVal || !trimmedPath) {
+        formData.append(removeKey, "1");
+      } else {
+        formData.append(pathKey, trimmedPath);
+      }
+    };
+
+    appendCmsImage("hero_image_path", "hero_image", "remove_hero_image", heroImagePath, heroImageFile, removeHeroImage);
+    appendCmsImage("msme_image_path", "msme_image", "remove_msme_image", msmeImagePath, msmeImageFile, removeMsmeImage);
+    appendCmsImage("mandate_image_path", "mandate_image", "remove_mandate_image", mandateImagePath, mandateImageFile, removeMandateImage);
 
     try {
       const res = await LandingPageService.updateSettings(formData);
       if (res.settings) {
         setHeroImagePath(res.settings.hero_image_path || "");
         setHeroImageFile(null);
+        setHeroImagePreview(resolveProjectImageUrl(res.settings.hero_image_path));
+        setRemoveHeroImage(false);
+
         setMsmeImagePath(res.settings.msme_image_path || "");
         setMsmeImageFile(null);
+        setMsmeImagePreview(resolveProjectImageUrl(res.settings.msme_image_path));
+        setRemoveMsmeImage(false);
+
         setMandateImagePath(res.settings.mandate_image_path || "");
         setMandateImageFile(null);
+        setMandateImagePreview(resolveProjectImageUrl(res.settings.mandate_image_path));
+        setRemoveMandateImage(false);
       }
+      publishLiveSync(["landing", "dashboard"]);
     } catch (error) {
       console.error("Failed to save landing settings:", error);
     } finally {
@@ -265,6 +276,7 @@ export const ManageLandingPage: React.FC = () => {
     setNewsPublishedAt(new Date().toISOString().slice(0, 16));
     setNewsImageFile(null);
     setNewsImagePreview(null);
+    setRemoveNewsImage(false);
     setNewsSourceName("");
     setNewsSourceUrl("");
     setIsNewsModalOpen(true);
@@ -286,15 +298,8 @@ export const ManageLandingPage: React.FC = () => {
     setNewsPublishedAt(formattedDate);
 
     setNewsImageFile(null);
-    if (article.image_path) {
-      setNewsImagePreview(
-        article.image_path.startsWith("http")
-          ? article.image_path
-          : `http://localhost:8000${article.image_path}`
-      );
-    } else {
-      setNewsImagePreview(null);
-    }
+    setNewsImagePreview(resolveProjectImageUrl(article.image_path));
+    setRemoveNewsImage(false);
     setIsNewsModalOpen(true);
   };
 
@@ -315,6 +320,8 @@ export const ManageLandingPage: React.FC = () => {
     formData.append("published_at", new Date(newsPublishedAt).toISOString());
     if (newsImageFile) {
       formData.append("image", newsImageFile);
+    } else if (currentArticle?.id && removeNewsImage) {
+      formData.append("remove_image", "1");
     }
     if (newsSourceName) {
       formData.append("source_name", newsSourceName.trim());
@@ -330,7 +337,8 @@ export const ManageLandingPage: React.FC = () => {
         await NewsService.create(formData);
       }
       setIsNewsModalOpen(false);
-      fetchNews();
+      await fetchNews();
+      publishLiveSync(["news", "dashboard"]);
     } catch (error) {
       console.error("Failed to save news article:", error);
     } finally {
@@ -342,11 +350,100 @@ export const ManageLandingPage: React.FC = () => {
     if (!window.confirm("Are you sure you want to delete this news article?")) return;
     try {
       await NewsService.delete(id);
-      fetchNews();
+      await fetchNews();
+      publishLiveSync(["news", "dashboard"]);
     } catch (error) {
       console.error("Failed to delete news article:", error);
     }
   };
+
+  const renderCmsImageField = (config: {
+    id: string;
+    label: string;
+    description: string;
+    preview: string | null;
+    pathValue: string;
+    buttonLabel: string;
+    altText: string;
+    setFile: (file: File | null) => void;
+    setPreview: (preview: string | null) => void;
+    setPath: (path: string) => void;
+    setRemoved: (removed: boolean) => void;
+  }) => (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-slate-700">{config.label}</label>
+      <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 border border-slate-200/60 rounded-2xl">
+        <div className="w-full sm:w-44 h-24 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+          <ProjectImage
+            src={config.preview}
+            alt={config.altText}
+            className="w-full h-full object-cover"
+            fallbackClassName="px-2 gap-1"
+          />
+        </div>
+        <div className="space-y-2 w-full text-left">
+          <p className="text-[11px] text-slate-500 leading-snug">{config.description}</p>
+          <div className="flex flex-col gap-2">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) {
+                  config.setFile(file);
+                  config.setPreview(URL.createObjectURL(file));
+                  config.setRemoved(false);
+                }
+              }}
+              className="hidden"
+              id={config.id}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                htmlFor={config.id}
+                className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg cursor-pointer transition-colors w-fit shadow-xs inline-block"
+              >
+                {config.buttonLabel}
+              </label>
+              {(config.preview || config.pathValue.trim()) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    config.setFile(null);
+                    config.setPreview(null);
+                    config.setPath("");
+                    config.setRemoved(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-red-50 border border-red-200 text-xs font-bold text-red-600 rounded-lg cursor-pointer transition-colors shadow-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Remove image
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500">Or use Image URL</label>
+              <input
+                type="text"
+                value={config.pathValue}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  config.setPath(val);
+                  config.setPreview(resolveProjectImageUrl(val));
+                  config.setFile(null);
+                  config.setRemoved(!val.trim());
+                }}
+                placeholder="https://..."
+                className="w-full px-3.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66]"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -500,61 +597,20 @@ export const ManageLandingPage: React.FC = () => {
                     </div>
 
                     {/* Hero Background Image */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-700">Hero Background Image</label>
-                      <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 border border-slate-200/60 rounded-2xl">
-                        {heroImagePreview ? (
-                          <div className="w-full sm:w-44 h-24 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
-                            <img src={heroImagePreview} alt="Hero Background Preview" className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-full sm:w-44 h-24 rounded-xl border border-dashed border-slate-300 bg-white shrink-0 flex items-center justify-center text-xs text-slate-400">
-                            No Image Selected
-                          </div>
-                        )}
-                        <div className="space-y-2 w-full text-left">
-                          <p className="text-[11px] text-slate-500 leading-snug">
-                            Upload a high-quality landscape image (JPG, PNG, WebP) for the public landing page hero header background.
-                          </p>
-                          <div className="flex flex-col gap-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  setHeroImageFile(file);
-                                  setHeroImagePreview(URL.createObjectURL(file));
-                                }
-                              }}
-                              className="hidden"
-                              id="hero-image-input"
-                            />
-                            <label
-                              htmlFor="hero-image-input"
-                              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg cursor-pointer transition-colors w-fit shadow-xs inline-block"
-                            >
-                              Choose Background Image
-                            </label>
-                            
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-500">Or use Image URL</label>
-                              <input
-                                type="text"
-                                value={heroImagePath}
-                                onChange={(e) => {
-                                  setHeroImagePath(e.target.value);
-                                  setHeroImagePreview(e.target.value);
-                                  setHeroImageFile(null);
-                                }}
-                                placeholder="https://..."
-                                className="w-full px-3.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-[#002B66]/20 focus:border-[#002B66]"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {renderCmsImageField({
+                      id: "hero-image-input",
+                      label: "Hero Background Image",
+                      description:
+                        "Upload a high-quality landscape image (JPG, PNG, WebP) for the public landing page hero header background.",
+                      preview: heroImagePreview,
+                      pathValue: heroImagePath,
+                      buttonLabel: "Choose Background Image",
+                      altText: "Hero Background Preview",
+                      setFile: setHeroImageFile,
+                      setPreview: setHeroImagePreview,
+                      setPath: setHeroImagePath,
+                      setRemoved: setRemoveHeroImage,
+                    })}
                   </div>
                 )}
 
@@ -757,61 +813,20 @@ export const ManageLandingPage: React.FC = () => {
                     </div>
 
                     {/* MSME Image Upload */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-700">MSME Section Image</label>
-                      <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 border border-slate-200/60 rounded-2xl">
-                        {msmeImagePreview ? (
-                          <div className="w-full sm:w-44 h-24 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
-                            <img src={msmeImagePreview} alt="MSME Preview" className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-full sm:w-44 h-24 rounded-xl border border-dashed border-slate-300 bg-white shrink-0 flex items-center justify-center text-xs text-slate-400">
-                            No Image Selected
-                          </div>
-                        )}
-                        <div className="space-y-2 w-full text-left">
-                          <p className="text-[11px] text-slate-500 leading-snug">
-                            Upload a high-quality landscape image (JPG, PNG, WebP) for the MSME Support section.
-                          </p>
-                          <div className="flex flex-col gap-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  setMsmeImageFile(file);
-                                  setMsmeImagePreview(URL.createObjectURL(file));
-                                }
-                              }}
-                              className="hidden"
-                              id="msme-image-input"
-                            />
-                            <label
-                              htmlFor="msme-image-input"
-                              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg cursor-pointer transition-colors w-fit shadow-xs inline-block"
-                            >
-                              Choose MSME Image
-                            </label>
-                            
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-500">Or use Image URL</label>
-                              <input
-                                type="text"
-                                value={msmeImagePath}
-                                onChange={(e) => {
-                                  setMsmeImagePath(e.target.value);
-                                  setMsmeImagePreview(e.target.value);
-                                  setMsmeImageFile(null);
-                                }}
-                                placeholder="https://..."
-                                className="w-full px-3.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {renderCmsImageField({
+                      id: "msme-image-input",
+                      label: "MSME Section Image",
+                      description:
+                        "Upload a high-quality landscape image (JPG, PNG, WebP) for the MSME Support section.",
+                      preview: msmeImagePreview,
+                      pathValue: msmeImagePath,
+                      buttonLabel: "Choose MSME Image",
+                      altText: "MSME Preview",
+                      setFile: setMsmeImageFile,
+                      setPreview: setMsmeImagePreview,
+                      setPath: setMsmeImagePath,
+                      setRemoved: setRemoveMsmeImage,
+                    })}
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-700">Mandate Description Statement</label>
@@ -825,61 +840,20 @@ export const ManageLandingPage: React.FC = () => {
                     </div>
 
                     {/* Mandate Image Upload */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-700">Mandate / Capitol Image</label>
-                      <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 border border-slate-200/60 rounded-2xl">
-                        {mandateImagePreview ? (
-                          <div className="w-full sm:w-44 h-24 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
-                            <img src={mandateImagePreview} alt="Mandate Preview" className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-full sm:w-44 h-24 rounded-xl border border-dashed border-slate-300 bg-white shrink-0 flex items-center justify-center text-xs text-slate-400">
-                            No Image Selected
-                          </div>
-                        )}
-                        <div className="space-y-2 w-full text-left">
-                          <p className="text-[11px] text-slate-500 leading-snug">
-                            Upload a high-quality landscape image (JPG, PNG, WebP) of the Capitol Building / Mandate section.
-                          </p>
-                          <div className="flex flex-col gap-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  setMandateImageFile(file);
-                                  setMandateImagePreview(URL.createObjectURL(file));
-                                }
-                              }}
-                              className="hidden"
-                              id="mandate-image-input"
-                            />
-                            <label
-                              htmlFor="mandate-image-input"
-                              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg cursor-pointer transition-colors w-fit shadow-xs inline-block"
-                            >
-                              Choose Mandate Image
-                            </label>
-                            
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-slate-500">Or use Image URL</label>
-                              <input
-                                type="text"
-                                value={mandateImagePath}
-                                onChange={(e) => {
-                                  setMandateImagePath(e.target.value);
-                                  setMandateImagePreview(e.target.value);
-                                  setMandateImageFile(null);
-                                }}
-                                placeholder="https://..."
-                                className="w-full px-3.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {renderCmsImageField({
+                      id: "mandate-image-input",
+                      label: "Mandate / Capitol Image",
+                      description:
+                        "Upload a high-quality landscape image (JPG, PNG, WebP) of the Capitol Building / Mandate section.",
+                      preview: mandateImagePreview,
+                      pathValue: mandateImagePath,
+                      buttonLabel: "Choose Mandate Image",
+                      altText: "Mandate Preview",
+                      setFile: setMandateImageFile,
+                      setPreview: setMandateImagePreview,
+                      setPath: setMandateImagePath,
+                      setRemoved: setRemoveMandateImage,
+                    })}
 
                     <hr className="border-slate-100 my-2" />
                     <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Service Pledges Checklist</h4>
@@ -1059,17 +1033,14 @@ export const ManageLandingPage: React.FC = () => {
                               .map((art) => (
                                 <tr key={art.id} className="hover:bg-slate-50/50">
                                   <td className="px-4 py-3">
-                                    {art.image_path ? (
-                                      <img 
-                                        src={art.image_path.startsWith("http") ? art.image_path : `http://localhost:8000${art.image_path}`} 
-                                        alt="News Cover" 
-                                        className="w-14 h-9 object-cover rounded-lg border border-slate-200" 
+                                    <div className="w-14 h-9 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                                      <ProjectImage
+                                        src={art.image_path}
+                                        alt={art.title}
+                                        className="w-full h-full object-cover"
+                                        compact
                                       />
-                                    ) : (
-                                      <div className="w-14 h-9 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200">
-                                        <FileText className="w-3.5 h-3.5 text-slate-400" />
-                                      </div>
-                                    )}
+                                    </div>
                                   </td>
                                   <td className="px-4 py-3 max-w-xs">
                                     <div className="space-y-0.5">
@@ -1293,15 +1264,14 @@ export const ManageLandingPage: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-700">Cover Image</label>
                     <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 border border-slate-200/60 rounded-2xl">
-                      {newsImagePreview ? (
-                        <div className="w-full sm:w-36 h-20 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
-                          <img src={newsImagePreview} alt="News Preview" className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-full sm:w-36 h-20 rounded-xl border border-dashed border-slate-300 bg-white shrink-0 flex items-center justify-center text-xs text-slate-400">
-                          No Image Selected
-                        </div>
-                      )}
+                      <div className="w-full sm:w-36 h-20 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+                        <ProjectImage
+                          src={newsImagePreview}
+                          alt="News Preview"
+                          className="w-full h-full object-cover"
+                          fallbackClassName="px-2 gap-1"
+                        />
+                      </div>
                       <div className="text-left space-y-2 w-full">
                         <p className="text-[11px] text-slate-500 leading-snug">
                           Upload a photo related to the story. Suggested ratio 16:9 (maximum 5MB size).
@@ -1311,21 +1281,41 @@ export const ManageLandingPage: React.FC = () => {
                           accept="image/*"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
+                            e.target.value = "";
                             if (file) {
                               setNewsImageFile(file);
                               setNewsImagePreview(URL.createObjectURL(file));
+                              setRemoveNewsImage(false);
                             }
                           }}
                           className="hidden"
                           id="news-cover-input-cms"
                         />
-                        <label
-                          htmlFor="news-cover-input-cms"
-                          className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-xs inline-flex items-center gap-1.5"
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>Choose Cover Photo</span>
-                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label
+                            htmlFor="news-cover-input-cms"
+                            className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-xs inline-flex items-center gap-1.5"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Choose Cover Photo</span>
+                          </label>
+                          {newsImagePreview && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewsImageFile(null);
+                                setNewsImagePreview(null);
+                                if (currentArticle?.id) {
+                                  setRemoveNewsImage(true);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-red-50 border border-red-200 text-[11px] font-bold text-red-600 rounded-lg cursor-pointer transition-colors shadow-xs"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Remove image
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -34,7 +34,7 @@ const Login: React.FC = () => {
         recaptcha_token: recaptchaToken  || "debug" // use that code if want to use without captcha
       });
 
-      notify.success("Welcome Back!", `Successfully signed in as ${data.user.name}`);
+      notify.success("Welcome Back!", `Successfully signed in as ${data.user.name || data.user.fullname || "User"}`);
       navigate(PATHS.APP.DASHBOARD);
     } catch (err) {
       // Error notification is automatically handled by ApiHandler inside AuthService
@@ -68,7 +68,7 @@ const Login: React.FC = () => {
           <div className="p-8">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-foreground">Welcome Back</h2>
-              <p className="text-sm text-muted-foreground mt-1">Please enter your credentials to access the dashboard</p>
+              <p className="text-sm text-muted-foreground mt-1">Sign in with your Administrator or PEDIPO Staff credentials</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">

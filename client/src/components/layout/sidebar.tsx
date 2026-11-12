@@ -4,54 +4,72 @@ import * as Icons from "lucide-react";
 import { cn } from "../../lib/utils"
 import { PATHS } from "../../routes/paths"
 import Logo from "../../assets/logo.jpg"
-import { AuthService } from "../../services/Authservices"
+import { AuthService, type ManagementRole } from "../../services/Authservices"
 
 interface SidebarProps {
   isCollapsed: boolean
   setIsCollapsed: (value: boolean) => void
 }
 
-export const routes = [
+export interface SidebarRouteItem {
+  label: string
+  path: string
+  icon: Icons.LucideIcon
+  roles: ManagementRole[]
+}
+
+export const routes: SidebarRouteItem[] = [
   {
     label: "Dashboard",
     path: PATHS.APP.DASHBOARD,
     icon: Icons.LayoutDashboard,
+    roles: ["admin", "staff"],
   },
   {
     label: "Investment Management",
     path: PATHS.APP.MANAGE_INVESTMENT_MANAGEMENT,
     icon: Icons.TrendingUp,
+    roles: ["admin", "staff"],
   },
   {
     label: "Data Entry",
     path: PATHS.APP.DATA_ENTRY,
     icon: Icons.FileSpreadsheet,
+    roles: ["admin", "staff"],
   },
-  { 
+  {
     label: "Inquiries",
     path: PATHS.APP.MANAGE_INQUIRIES,
     icon: Icons.MessageSquare,
+    roles: ["admin"],
   },
   {
     label: "MSMEs",
     path: PATHS.APP.MANAGE_MSMES,
     icon: Icons.Store,
+    roles: ["admin", "staff"],
   },
   {
     label: "Landing Page CMS",
     path: PATHS.APP.MANAGE_LANDING_PAGE,
     icon: Icons.Settings,
+    roles: ["admin", "staff"],
   },
   {
     label: "Users",
     path: PATHS.APP.MANAGE_USERS,
     icon: Icons.Users,
+    roles: ["admin"],
   },
 ];
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const user = AuthService.getUser() || { name: "Admin User", email: "admin@pedipo.gov.ph" };
+  const role = AuthService.getRole() || "admin";
+  const isStaff = role === "staff";
+  const user = AuthService.getUser() || { name: isStaff ? "PEDIPO Staff" : "Admin User", email: "admin@pedipo.gov.ph" };
+  const displayName = user.name || user.fullname || (isStaff ? "PEDIPO Staff" : "Admin User");
+  const visibleRoutes = routes.filter((item) => item.roles.includes(role));
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed)
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -102,7 +120,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
                   CAPIZ IS
                 </span>  
                 <span className="text-[8px] px-1.5 py-0.5 mt-0.5 rounded-md bg-blue-500/10 text-blue-300 font-bold border border-blue-400/20 uppercase tracking-widest w-fit">
-                  Admin Portal
+                  {isStaff ? "Staff Portal" : "Admin Portal"}
                 </span> 
               </div>
             </div>
@@ -135,7 +153,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
             )}>
               {isCollapsed ? "Menu" : "Management Console"}
             </p>
-            {routes.map((item) => (
+            {visibleRoutes.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
@@ -169,17 +187,19 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
             {!isCollapsed ? (
               <div className="flex items-center gap-3 bg-white/5 p-2.5 rounded-2xl border border-white/5">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center font-bold text-white uppercase text-xs shadow-inner">
-                  {user.name.charAt(0)}
+                  {displayName.charAt(0)}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[11px] font-bold text-slate-200 truncate">{user.name}</span>
-                  <span className="text-[9px] text-[#E2B714] font-medium truncate">System Administrator</span>
+                  <span className="text-[11px] font-bold text-slate-200 truncate">{displayName}</span>
+                  <span className="text-[9px] text-[#E2B714] font-medium truncate">
+                    {isStaff ? "PEDIPO Staff" : "System Administrator"}
+                  </span>
                 </div>
               </div>
             ) : (
               <div className="w-full flex justify-center">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center font-bold text-white uppercase text-xs shadow-inner">
-                  {user.name.charAt(0)}
+                  {displayName.charAt(0)}
                 </div>
               </div>
             )}

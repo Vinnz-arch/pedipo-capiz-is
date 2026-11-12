@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   Briefcase, 
@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 import { MsmeService, type MsmeRequestData } from "@/services/MsmeService";
 import { OpportunityService, type OpportunityData } from "@/services/OpportunityService";
 import { PATHS } from "@/routes/paths";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 const UserDashboard: React.FC = () => {
   const clientUser = JSON.parse(localStorage.getItem("client_user") || "{}");
@@ -25,28 +27,46 @@ const UserDashboard: React.FC = () => {
   const [msmeRequests, setMsmeRequests] = useState<MsmeRequestData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        const [oppRes, msmeRes] = await Promise.all([
-          OpportunityService.getAll(),
-          MsmeService.getAll()
-        ]);
-        
-        if (oppRes.opportunities) {
-          setOpportunities(oppRes.opportunities);
-        }
-        if (msmeRes.requests) {
-          setMsmeRequests(msmeRes.requests);
-        }
-      } catch (err) {
-        console.error("Error loading dashboard data:", err);
-      } finally {
+  const loadDashboardData = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    try {
+      const [oppRes, msmeRes] = await Promise.all([
+        OpportunityService.getAll(),
+        MsmeService.getAll()
+      ]);
+      
+      if (oppRes.opportunities) {
+        setOpportunities(oppRes.opportunities);
+      }
+      if (msmeRes.requests) {
+        setMsmeRequests(msmeRes.requests);
+      }
+    } catch (err) {
+      console.error("Error loading dashboard data:", err);
+    } finally {
+      if (!silent) {
         setIsLoading(false);
       }
-    };
-    loadDashboardData();
+    }
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) {
+        void loadDashboardData();
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [loadDashboardData]);
+
+  useLiveSync(
+    ["opportunities", "msmes", "all"],
+    () => loadDashboardData({ silent: true }),
+    { pollIntervalMs: 15000 }
+  );
 
   // Compute metrics
   const totalOpps = opportunities.length;
@@ -207,17 +227,12 @@ const UserDashboard: React.FC = () => {
                         className="flex items-start gap-4 p-3.5 rounded-2xl border border-slate-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all"
                       >
                         <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-100">
-                          {opp.image_path ? (
-                            <img 
-                              src={opp.image_path.startsWith("http") ? opp.image_path : `http://localhost:8000${opp.image_path}`}
-                              alt={opp.project_name} 
-                              className="w-full h-full object-cover" 
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-slate-50 flex items-center justify-center">
-                              <Building className="w-5 h-5 text-slate-400" />
-                            </div>
-                          )}
+                          <ProjectImage
+                            src={opp.image_path}
+                            alt={opp.project_name}
+                            className="w-full h-full object-cover"
+                            compact
+                          />
                         </div>
                         <div className="space-y-1 w-full min-w-0">
                           <div className="flex items-start justify-between gap-2">

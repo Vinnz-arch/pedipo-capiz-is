@@ -71,7 +71,7 @@ class OpportunityController extends Controller
             'key_incentives' => $validated['key_incentives'] ?? null,
             'description' => $validated['description'] ?? null,
             'incentive_package' => $validated['incentive_package'] ?? $validated['key_incentives'] ?? null,
-            'image_path' => $imagePath ?? '/images/seafood_hub.png',
+            'image_path' => $imagePath,
             'status' => $validated['status'] ?? 'Draft',
             'location' => $validated['location'] ?? 'Roxas City, Capiz',
             'source_name' => $validated['source_name'] ?? null,
@@ -112,6 +112,7 @@ class OpportunityController extends Controller
             'location' => 'nullable|string|max:255',
             'source_name' => 'nullable|string|max:255',
             'source_url' => 'nullable|url|max:255',
+            'remove_image' => 'nullable|boolean',
         ];
 
         if ($request->hasFile('image')) {
@@ -119,10 +120,15 @@ class OpportunityController extends Controller
         }
 
         $validated = $request->validate($rules);
+        unset($validated['remove_image']);
 
         if ($request->hasFile('image')) {
+            $opportunity->deleteStoredImageFile();
             $path = $request->file('image')->store('opportunities', 'public');
             $validated['image_path'] = '/storage/' . $path;
+        } elseif ($request->boolean('remove_image')) {
+            $opportunity->deleteStoredImageFile();
+            $validated['image_path'] = null;
         }
 
         $opportunity->update($validated);
@@ -168,6 +174,7 @@ class OpportunityController extends Controller
     public function syncPortal(): JsonResponse
     {
         Cache::forget('public_opportunities');
+        Cache::forget('public_parent_opportunities');
 
         $publishedCount = Opportunity::where('status', 'Published')->count();
         $draftCount = Opportunity::where('status', 'Draft')->count();

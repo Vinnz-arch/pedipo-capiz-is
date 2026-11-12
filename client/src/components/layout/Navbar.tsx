@@ -12,10 +12,13 @@ const Navbar: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  const isStaff = AuthService.isStaff();
   const user = AuthService.getUser() || {
-    name: "Admin User",
+    name: isStaff ? "PEDIPO Staff" : "Admin User",
     email: "admin@pedipo.gov.ph",
   };
+  const displayName = user.name || user.fullname || (isStaff ? "PEDIPO Staff" : "Admin User");
+  const roleLabel = isStaff ? "PEDIPO Staff" : "Super Admin";
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -50,10 +53,13 @@ const Navbar: React.FC = () => {
       </div>
       
       <div className="flex items-center gap-4">
-        {/* Notification Bell Dropdown */}
-        <NotificationDropdown />
-
-        <div className="h-8 w-px bg-border mx-1"></div>
+        {/* Notification Bell Dropdown (Admin only) */}
+        {!isStaff && (
+          <>
+            <NotificationDropdown />
+            <div className="h-8 w-px bg-border mx-1"></div>
+          </>
+        )}
 
         {/* User Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
@@ -63,9 +69,9 @@ const Navbar: React.FC = () => {
           >
             <div className="text-right hidden sm:block">
               <p className="text-sm font-semibold text-slate-800 group-hover:text-primary transition-colors">
-                {user.name || "Admin User"}
+                {displayName}
               </p>
-              <p className="text-xs text-muted-foreground">Super Admin</p>
+              <p className="text-xs text-muted-foreground">{roleLabel}</p>
             </div>
 
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 group-hover:border-primary/40 transition-colors shrink-0">
@@ -80,8 +86,8 @@ const Navbar: React.FC = () => {
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               {/* User Header Info */}
               <div className="px-4 py-3 border-b border-slate-100">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Signed in as</p>
-                <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">{user.name || "Admin User"}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Signed in as ({roleLabel})</p>
+                <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">{displayName}</p>
                 <p className="text-xs text-slate-500 truncate mt-0.5">{user.email || "admin@pedipo.gov.ph"}</p>
               </div>
 

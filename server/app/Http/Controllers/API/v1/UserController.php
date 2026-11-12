@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\v1;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class UserController extends Controller
     {
         $perPage = $request->query('per_page', 10);
         $search = $request->query('search', '');
+        $role = $request->query('role', '');
 
         $query = User::query();
 
@@ -27,6 +29,10 @@ class UserController extends Controller
                   ->orWhere('username', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
             });
+        }
+
+        if (!empty($role) && $role !== 'all') {
+            $query->where('role', $role);
         }
 
         return response()->json($query->orderBy('fullname', 'asc')->paginate($perPage));
@@ -42,7 +48,7 @@ class UserController extends Controller
             'username' => 'required|string|max:255|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'nullable|string|max:50',
+            'role' => ['nullable', 'string', Rule::in([UserRole::USER->value, UserRole::STAFF->value])],
         ]);
 
         $user = User::create([
@@ -50,7 +56,7 @@ class UserController extends Controller
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => $validated['password'], // Hash cast will handle this
-            'role' => $validated['role'] ?? 'user',
+            'role' => $validated['role'] ?? UserRole::USER->value,
         ]);
 
         return response()->json([
@@ -85,7 +91,7 @@ class UserController extends Controller
             ],
             'current_password' => 'required_with:password|string',
             'password' => 'sometimes|nullable|string|min:8|confirmed',
-            'role' => 'sometimes|nullable|string|max:50',
+            'role' => ['sometimes', 'nullable', 'string', Rule::in([UserRole::USER->value, UserRole::STAFF->value])],
         ]);
 
         if (!empty($validated['password'])) {
@@ -98,6 +104,10 @@ class UserController extends Controller
 
         if (empty($validated['password'])) {
             unset($validated['password']);
+        }
+
+        if (empty($validated['role'])) {
+            unset($validated['role']);
         }
         
         unset($validated['current_password']);

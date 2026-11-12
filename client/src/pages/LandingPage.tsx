@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   MapPin, 
@@ -17,6 +17,9 @@ import { OpportunityService, type OpportunityData } from "@/services/Opportunity
 import { NewsService, type NewsArticleData } from "@/services/NewsService";
 import logo from "../assets/logo.jpg";
 import LoadingScreen from "@/components/common/LoadingScreen";
+import { ProjectImage } from "@/components/ui/ProjectImage";
+import { resolveProjectImageUrl } from "@/util/projectImage";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,33 +28,52 @@ export const LandingPage: React.FC = () => {
   const [news, setNews] = useState<NewsArticleData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [failedHeroSrc, setFailedHeroSrc] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchLandingData = async () => {
-      try {
-        const settingsRes = await LandingPageService.getSettings();
-        if (settingsRes.settings) {
-          setSettings(settingsRes.settings);
-        }
+  const fetchLandingData = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    try {
+      const settingsRes = await LandingPageService.getSettings();
+      if (settingsRes.settings) {
+        setSettings(settingsRes.settings);
+      }
 
-        const oppsRes = await OpportunityService.getAll();
-        if (oppsRes.opportunities) {
-          // Only show published opportunities on public page
-          setOpportunities(oppsRes.opportunities.filter(o => o.status === "Published").slice(0, 3));
-        }
+      const oppsRes = await OpportunityService.getAll();
+      if (oppsRes.opportunities) {
+        // Only show published opportunities on public page
+        setOpportunities(oppsRes.opportunities.filter(o => o.status === "Published").slice(0, 3));
+      }
 
-        const newsRes = await NewsService.getAll();
-        if (newsRes.articles) {
-          setNews(newsRes.articles.slice(0, 3));
-        }
-      } catch (error) {
-        console.error("Failed to load landing page data:", error);
-      } finally {
+      const newsRes = await NewsService.getAll();
+      if (newsRes.articles) {
+        setNews(newsRes.articles.slice(0, 3));
+      }
+    } catch (error) {
+      console.error("Failed to load landing page data:", error);
+    } finally {
+      if (!silent) {
         setIsLoading(false);
       }
-    };
-    fetchLandingData();
+    }
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) {
+        void fetchLandingData();
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [fetchLandingData]);
+
+  useLiveSync(
+    ["landing", "opportunities", "news", "all"],
+    () => fetchLandingData({ silent: true }),
+    { pollIntervalMs: 10000 }
+  );
 
   const handleExploreOpps = () => {
     const el = document.getElementById("opportunities");
@@ -68,14 +90,6 @@ export const LandingPage: React.FC = () => {
     window.open("https://capiz.gov.ph", "_blank");
   };
 
-  const resolveCmsImageUrl = (path?: string, fallback: string = "") => {
-    if (!path) return fallback;
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
-    }
-    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
-  };
-
   const parseBullets = (bulletsText?: string): string[] => {
     if (!bulletsText) return [];
     return bulletsText.split("\n").map(line => line.trim()).filter(Boolean);
@@ -84,6 +98,8 @@ export const LandingPage: React.FC = () => {
   if (isLoading || !settings) {
     return <LoadingScreen message="Loading Capiz PEDIPO Portal..." />;
   }
+
+  const heroImageUrl = resolveProjectImageUrl(settings.hero_image_path);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 antialiased scroll-smooth">
@@ -214,12 +230,15 @@ export const LandingPage: React.FC = () => {
       {/* 2. Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 text-white py-24 sm:py-32">
         <div className="absolute inset-0 z-0">
-          <img 
-            src={resolveCmsImageUrl(settings.hero_image_path, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80")} 
-            alt="Capiz Coastline" 
-            className="w-full h-full object-cover opacity-35"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#002B66]/90 to-transparent" />
+          {heroImageUrl && failedHeroSrc !== heroImageUrl && (
+            <img 
+              src={heroImageUrl} 
+              alt="Capiz Coastline" 
+              onError={() => setFailedHeroSrc(heroImageUrl)}
+              className="w-full h-full object-cover opacity-35"
+            />
+          )}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#002B66]/90 to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -390,10 +409,11 @@ export const LandingPage: React.FC = () => {
               opportunities.map((opp) => (
                 <div key={opp.id} className="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
                   <div className="relative h-44 bg-slate-100">
-                    <img 
-                      src={opp.image_path ? (opp.image_path.startsWith("http") ? opp.image_path : `http://localhost:8000${opp.image_path}`) : "/images/seafood_hub.png"} 
+                    <ProjectImage 
+                      src={opp.image_path} 
                       alt={opp.project_name} 
                       className="w-full h-full object-cover"
+                      fallbackClassName="pt-4"
                     />
                     <span className="absolute top-3 left-3 bg-[#002B66] text-white text-[9px] font-bold px-2.5 py-1 rounded-full border border-blue-200/20 uppercase tracking-wider">
                       {opp.category?.name || "General"}
@@ -465,13 +485,15 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Right Photo */}
-            <div className="relative min-h-[300px] lg:min-h-full">
-              <img 
-                src={resolveCmsImageUrl(settings.msme_image_path, "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80")} 
-                alt="MSME Local Marketplace" 
-                className="absolute inset-0 w-full h-full object-cover opacity-80"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent lg:bg-gradient-to-r lg:from-slate-950 lg:via-transparent lg:to-transparent" />
+            <div className="relative min-h-[300px] lg:min-h-full bg-slate-100">
+              <div className="absolute inset-0">
+                <ProjectImage
+                  src={settings.msme_image_path}
+                  alt="MSME Local Marketplace"
+                  className="w-full h-full object-cover opacity-80"
+                />
+              </div>
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent lg:bg-gradient-to-r lg:from-slate-950/70 lg:via-transparent lg:to-transparent" />
             </div>
           </div>
         </div>
@@ -514,9 +536,9 @@ export const LandingPage: React.FC = () => {
                 >
                   <div>
                     <div className="relative h-48 bg-slate-100 overflow-hidden">
-                      <img 
-                        src={resolveCmsImageUrl(item.image_path, "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80")} 
-                        alt={item.title} 
+                      <ProjectImage
+                        src={item.image_path}
+                        alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     </div>
@@ -551,10 +573,10 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Capitol Image */}
-            <div className="lg:col-span-5 relative rounded-2xl overflow-hidden shadow-lg border border-slate-200 max-h-[360px]">
-              <img 
-                src={resolveCmsImageUrl(settings.mandate_image_path, "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80")} 
-                alt="Capiz Provincial Capitol" 
+            <div className="lg:col-span-5 relative rounded-2xl overflow-hidden shadow-lg border border-slate-200 h-[320px] bg-slate-100">
+              <ProjectImage
+                src={settings.mandate_image_path}
+                alt="Capiz Provincial Capitol"
                 className="w-full h-full object-cover"
               />
             </div>

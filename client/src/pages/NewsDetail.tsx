@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   Calendar, 
@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { NewsService, type NewsArticleData } from "@/services/NewsService";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 import { notify } from "@/util/notify";
 import logo from "../assets/logo.jpg";
+import { useLiveSync } from "@/hooks/useLiveSync";
 
 export const NewsDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -26,23 +28,41 @@ export const NewsDetail: React.FC = () => {
   const [commentText, setCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  useEffect(() => {
-    const fetchArticleDetails = async () => {
-      if (!slug) return;
-      try {
-        const res = await NewsService.get(slug);
-        if (res.article) {
-          setArticle(res.article);
-        }
-      } catch (error) {
-        console.error("Failed to load article details:", error);
+  const fetchArticleDetails = useCallback(async (options?: { silent?: boolean }) => {
+    if (!slug) return;
+    const silent = options?.silent ?? false;
+    try {
+      const res = await NewsService.get(slug);
+      if (res.article) {
+        setArticle(res.article);
+      }
+    } catch (error) {
+      console.error("Failed to load article details:", error);
+      if (!silent) {
         notify.error("Error", "Failed to retrieve news article.");
-      } finally {
+      }
+    } finally {
+      if (!silent) {
         setIsLoading(false);
       }
-    };
-    fetchArticleDetails();
+    }
   }, [slug]);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) {
+        void fetchArticleDetails();
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [fetchArticleDetails]);
+
+  useLiveSync(["news", "all"], () => fetchArticleDetails({ silent: true }), {
+    pollIntervalMs: 15000,
+  });
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,14 +105,6 @@ export const NewsDetail: React.FC = () => {
       month: "long",
       day: "numeric",
     });
-  };
-
-  const resolveNewsImage = (path?: string) => {
-    if (!path) return "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80";
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
-    }
-    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
   };
 
   if (isLoading) {
@@ -172,9 +184,9 @@ export const NewsDetail: React.FC = () => {
 
         {/* Cover Image */}
         <div className="h-[300px] sm:h-[450px] bg-slate-100 rounded-3xl overflow-hidden border border-slate-200/50 shadow-xs">
-          <img 
-            src={resolveNewsImage(article.image_path)} 
-            alt={article.title} 
+          <ProjectImage
+            src={article.image_path}
+            alt={article.title}
             className="w-full h-full object-cover"
           />
         </div>

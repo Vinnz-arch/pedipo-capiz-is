@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/Mainlayout";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 import { MsmeDirectoryService, type MsmeData, type MsmeStats } from "@/services/MsmeDirectoryService";
 import { MunicipalityService, type MunicipalityData } from "@/services/MunicipalityService";
 import { OpportunityService, type CategoryData } from "@/services/OpportunityService";
 import { notify } from "@/util/notify";
+import { resolveProjectImageUrl } from "@/util/projectImage";
+import { publishLiveSync } from "@/util/liveSync";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import { 
   Plus, 
   Search, 
@@ -22,9 +26,34 @@ import {
   Loader2, 
   Phone, 
   Mail, 
-  Calendar,
-  ShoppingBag
+  Calendar
 } from "lucide-react";
+
+type MsmeImageSlot = "logo" | "cover" | "product_image_1" | "product_image_2" | "product_image_3";
+
+const EMPTY_MSME_IMAGE_FILES: Record<MsmeImageSlot, File | null> = {
+  logo: null,
+  cover: null,
+  product_image_1: null,
+  product_image_2: null,
+  product_image_3: null,
+};
+
+const EMPTY_MSME_IMAGE_PREVIEWS: Record<MsmeImageSlot, string | null> = {
+  logo: null,
+  cover: null,
+  product_image_1: null,
+  product_image_2: null,
+  product_image_3: null,
+};
+
+const EMPTY_MSME_REMOVE_FLAGS: Record<MsmeImageSlot, boolean> = {
+  logo: false,
+  cover: false,
+  product_image_1: false,
+  product_image_2: false,
+  product_image_3: false,
+};
 
 export const ManageMsmes: React.FC = () => {
   const [msmes, setMsmes] = useState<MsmeData[]>([]);
@@ -71,16 +100,15 @@ export const ManageMsmes: React.FC = () => {
   const [dateRegistered, setDateRegistered] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [prodFile1, setProdFile1] = useState<File | null>(null);
-  const [prodPreview1, setProdPreview1] = useState<string | null>(null);
-  const [prodFile2, setProdFile2] = useState<File | null>(null);
-  const [prodPreview2, setProdPreview2] = useState<string | null>(null);
-  const [prodFile3, setProdFile3] = useState<File | null>(null);
-  const [prodPreview3, setProdPreview3] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<Record<MsmeImageSlot, File | null>>(() => ({
+    ...EMPTY_MSME_IMAGE_FILES,
+  }));
+  const [imagePreviews, setImagePreviews] = useState<Record<MsmeImageSlot, string | null>>(() => ({
+    ...EMPTY_MSME_IMAGE_PREVIEWS,
+  }));
+  const [removeImages, setRemoveImages] = useState<Record<MsmeImageSlot, boolean>>(() => ({
+    ...EMPTY_MSME_REMOVE_FLAGS,
+  }));
 
   // Fetch dependencies (Municipalities, Categories) once
   const loadDependencies = async () => {
@@ -97,8 +125,11 @@ export const ManageMsmes: React.FC = () => {
   };
 
   // Fetch MSMEs based on filters & pagination
-  const fetchMsmes = async () => {
-    setIsLoading(true);
+  const fetchMsmes = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoading(true);
+    }
     try {
       const params = {
         search: searchQuery,
@@ -120,7 +151,9 @@ export const ManageMsmes: React.FC = () => {
     } catch (error) {
       console.error("Failed to fetch MSMEs:", error);
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -145,64 +178,42 @@ export const ManageMsmes: React.FC = () => {
     fetchMsmes();
   }, [searchQuery, selectedMuni, selectedCategory, selectedSize, selectedStatus, includeArchived, currentPage]);
 
-  // Handle Logo Upload Preview
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useLiveSync(
+    ["msmes", "all"],
+    () => {
+      fetchMsmes({ silent: true });
+      fetchStats();
+    },
+    { pollIntervalMs: 15000 }
+  );
+
+  // Handle image upload preview for all MSME image slots
+  const handleImageChange = (
+    slot: MsmeImageSlot,
+    label: string,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        notify.error("File Too Large", "Logo image must be under 5MB.");
-        return;
-      }
-      setLogoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      notify.error("File Too Large", `${label} must be under 5MB.`);
+      return;
     }
+    setImageFiles((prev) => ({ ...prev, [slot]: file }));
+    setRemoveImages((prev) => ({ ...prev, [slot]: false }));
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreviews((prev) => ({ ...prev, [slot]: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
   };
 
-  // Handle Cover Upload Preview
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        notify.error("File Too Large", "Cover image must be under 5MB.");
-        return;
-      }
-      setCoverFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Handle Product Images Preview
-  const handleProdImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        notify.error("File Too Large", "Product image must be under 5MB.");
-        return;
-      }
-      if (index === 1) {
-        setProdFile1(file);
-        const reader = new FileReader();
-        reader.onloadend = () => setProdPreview1(reader.result as string);
-        reader.readAsDataURL(file);
-      } else if (index === 2) {
-        setProdFile2(file);
-        const reader = new FileReader();
-        reader.onloadend = () => setProdPreview2(reader.result as string);
-        reader.readAsDataURL(file);
-      } else if (index === 3) {
-        setProdFile3(file);
-        const reader = new FileReader();
-        reader.onloadend = () => setProdPreview3(reader.result as string);
-        reader.readAsDataURL(file);
-      }
+  const handleRemoveImage = (slot: MsmeImageSlot) => {
+    setImageFiles((prev) => ({ ...prev, [slot]: null }));
+    setImagePreviews((prev) => ({ ...prev, [slot]: null }));
+    if (currentMsme?.id) {
+      setRemoveImages((prev) => ({ ...prev, [slot]: true }));
     }
   };
 
@@ -223,16 +234,9 @@ export const ManageMsmes: React.FC = () => {
     setDateRegistered(new Date().toISOString().split("T")[0]);
     setLatitude("");
     setLongitude("");
-    setLogoFile(null);
-    setLogoPreview(null);
-    setCoverFile(null);
-    setCoverPreview(null);
-    setProdFile1(null);
-    setProdPreview1(null);
-    setProdFile2(null);
-    setProdPreview2(null);
-    setProdFile3(null);
-    setProdPreview3(null);
+    setImageFiles({ ...EMPTY_MSME_IMAGE_FILES });
+    setImagePreviews({ ...EMPTY_MSME_IMAGE_PREVIEWS });
+    setRemoveImages({ ...EMPTY_MSME_REMOVE_FLAGS });
     setIsModalOpen(true);
   };
 
@@ -253,30 +257,21 @@ export const ManageMsmes: React.FC = () => {
     setDateRegistered(msme.date_registered || "");
     setLatitude(msme.latitude ? msme.latitude.toString() : "");
     setLongitude(msme.longitude ? msme.longitude.toString() : "");
-    setLogoFile(null);
-    setLogoPreview(msme.logo_path ? resolveLogoUrl(msme.logo_path) : null);
-    setCoverFile(null);
-    setCoverPreview(msme.cover_path ? resolveLogoUrl(msme.cover_path) : null);
-    setProdFile1(null);
-    setProdPreview1(msme.product_image_1 ? resolveLogoUrl(msme.product_image_1) : null);
-    setProdFile2(null);
-    setProdPreview2(msme.product_image_2 ? resolveLogoUrl(msme.product_image_2) : null);
-    setProdFile3(null);
-    setProdPreview3(msme.product_image_3 ? resolveLogoUrl(msme.product_image_3) : null);
+    setImageFiles({ ...EMPTY_MSME_IMAGE_FILES });
+    setImagePreviews({
+      logo: resolveProjectImageUrl(msme.logo_path),
+      cover: resolveProjectImageUrl(msme.cover_path),
+      product_image_1: resolveProjectImageUrl(msme.product_image_1),
+      product_image_2: resolveProjectImageUrl(msme.product_image_2),
+      product_image_3: resolveProjectImageUrl(msme.product_image_3),
+    });
+    setRemoveImages({ ...EMPTY_MSME_REMOVE_FLAGS });
     setIsModalOpen(true);
   };
 
   const openDetailsModal = (msme: MsmeData) => {
     setMsmeDetails(msme);
     setIsDetailModalOpen(true);
-  };
-
-  const resolveLogoUrl = (path?: string | null) => {
-    if (!path) return "https://images.unsplash.com/photo-1472898965229-f9b06b9c9bbe?auto=format&fit=crop&w=400&q=80";
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
-    }
-    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
   };
 
   // Form submission handler
@@ -306,21 +301,14 @@ export const ManageMsmes: React.FC = () => {
       if (latitude) formData.append("latitude", latitude);
       if (longitude) formData.append("longitude", longitude);
       
-      if (logoFile) {
-        formData.append("logo", logoFile);
-      }
-      if (coverFile) {
-        formData.append("cover", coverFile);
-      }
-      if (prodFile1) {
-        formData.append("product_image_1", prodFile1);
-      }
-      if (prodFile2) {
-        formData.append("product_image_2", prodFile2);
-      }
-      if (prodFile3) {
-        formData.append("product_image_3", prodFile3);
-      }
+      (Object.keys(EMPTY_MSME_IMAGE_FILES) as MsmeImageSlot[]).forEach((slot) => {
+        const file = imageFiles[slot];
+        if (file) {
+          formData.append(slot, file);
+        } else if (currentMsme?.id && removeImages[slot]) {
+          formData.append(`remove_${slot}`, "1");
+        }
+      });
 
       if (currentMsme && currentMsme.id) {
         // multipart update
@@ -330,8 +318,9 @@ export const ManageMsmes: React.FC = () => {
       }
 
       setIsModalOpen(false);
-      fetchMsmes();
-      fetchStats();
+      await fetchMsmes({ silent: true });
+      await fetchStats();
+      publishLiveSync(["msmes", "dashboard"]);
     } catch (err) {
       console.error(err);
     } finally {
@@ -347,8 +336,9 @@ export const ManageMsmes: React.FC = () => {
 
     try {
       await MsmeDirectoryService.deleteAdmin(id);
-      fetchMsmes();
-      fetchStats();
+      await fetchMsmes({ silent: true });
+      await fetchStats();
+      publishLiveSync(["msmes", "dashboard"]);
     } catch (err) {
       console.error(err);
     }
@@ -358,8 +348,9 @@ export const ManageMsmes: React.FC = () => {
   const handleArchive = async (id: number | string) => {
     try {
       await MsmeDirectoryService.archiveAdmin(id);
-      fetchMsmes();
-      fetchStats();
+      await fetchMsmes({ silent: true });
+      await fetchStats();
+      publishLiveSync(["msmes", "dashboard"]);
     } catch (err) {
       console.error(err);
     }
@@ -587,11 +578,14 @@ export const ManageMsmes: React.FC = () => {
                     <tr key={msme.id} className="hover:bg-slate-50/50 transition-all">
                       {/* Logo and Business name */}
                       <td className="py-4 px-6 flex items-center gap-3">
-                        <img
-                          src={resolveLogoUrl(msme.logo_path)}
-                          alt="logo"
-                          className="w-9 h-9 rounded-lg object-cover border border-slate-200"
-                        />
+                        <div className="w-9 h-9 rounded-lg overflow-hidden border border-slate-200 shrink-0">
+                          <ProjectImage
+                            src={msme.logo_path}
+                            alt={`${msme.business_name} logo`}
+                            className="w-full h-full object-cover"
+                            compact
+                          />
+                        </div>
                         <div className="flex flex-col min-w-0">
                           <span className="font-extrabold text-slate-800 truncate max-w-[180px]">{msme.business_name}</span>
                           <span className="text-[10px] text-slate-400 font-medium truncate max-w-[180px]">
@@ -956,117 +950,104 @@ export const ManageMsmes: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 7. Business Logo Upload */}
-                <div className="space-y-2">
-                  <label className="text-xs font-extrabold text-slate-600 block">Business Logo / Image</label>
-                  <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all">
-                    <div className="shrink-0 w-24 h-24 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center">
-                      {logoPreview ? (
-                        <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <Store className="w-8 h-8 text-slate-300" />
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-2 text-center sm:text-left">
-                      <p className="text-[11px] text-slate-500 font-medium">
-                        Upload a JPG, PNG, WEBP, or SVG image. Max limit size: 5MB.
-                      </p>
-                      <label className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-700 shadow-sm transition-all">
-                        <Upload className="w-3.5 h-3.5" />
-                        Choose Logo Image File
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoChange}
-                          className="hidden"
+                {/* 7 & 8. Business Logo & Cover Photo Uploads */}
+                {[
+                  {
+                    slot: "logo" as MsmeImageSlot,
+                    title: "Business Logo / Image",
+                    buttonLabel: "Choose Logo Image File",
+                    errorLabel: "Logo image",
+                  },
+                  {
+                    slot: "cover" as MsmeImageSlot,
+                    title: "Business Cover Photo",
+                    buttonLabel: "Choose Cover Image File",
+                    errorLabel: "Cover image",
+                  },
+                ].map((item) => (
+                  <div key={item.slot} className="space-y-2">
+                    <label className="text-xs font-extrabold text-slate-600 block">{item.title}</label>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all">
+                      <div className="shrink-0 w-24 h-24 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center">
+                        <ProjectImage
+                          src={imagePreviews[item.slot]}
+                          alt={`${item.title} preview`}
+                          className="w-full h-full object-cover"
+                          fallbackClassName="px-2 gap-1"
                         />
-                      </label>
+                      </div>
+                      <div className="flex-1 space-y-2 text-center sm:text-left">
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Upload a JPG, PNG, WEBP, or SVG image. Max limit size: 5MB.
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                          <label className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-700 shadow-sm transition-all">
+                            <Upload className="w-3.5 h-3.5" />
+                            {item.buttonLabel}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageChange(item.slot, item.errorLabel, e)}
+                              className="hidden"
+                            />
+                          </label>
+                          {imagePreviews[item.slot] && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(item.slot)}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-600 shadow-sm transition-all cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Remove image
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* 8. Business Cover Photo Upload */}
-                <div className="space-y-2">
-                  <label className="text-xs font-extrabold text-slate-600 block">Business Cover Photo</label>
-                  <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all">
-                    <div className="shrink-0 w-24 h-24 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center">
-                      {coverPreview ? (
-                        <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <Store className="w-8 h-8 text-slate-300" />
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-2 text-center sm:text-left">
-                      <p className="text-[11px] text-slate-500 font-medium">
-                        Upload a JPG, PNG, WEBP, or SVG image. Max limit size: 5MB.
-                      </p>
-                      <label className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-700 shadow-sm transition-all">
-                        <Upload className="w-3.5 h-3.5" />
-                        Choose Cover Image File
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleCoverChange}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
+                ))}
 
                 {/* 9. Featured Products Showcase Images */}
                 <div className="space-y-2">
                   <label className="text-xs font-extrabold text-slate-600 block">Featured Product Showcase Images (Up to 3)</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    
-                    {/* Product Image 1 */}
-                    <div className="p-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col items-center text-center gap-3">
-                      <div className="w-full h-24 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center">
-                        {prodPreview1 ? (
-                          <img src={prodPreview1} alt="Product 1 preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <ShoppingBag className="w-6 h-6 text-slate-300" />
-                        )}
-                      </div>
-                      <label className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold cursor-pointer text-slate-700 shadow-sm transition-all">
-                        <Upload className="w-3 h-3" />
-                        Product 1
-                        <input type="file" accept="image/*" onChange={(e) => handleProdImageChange(1, e)} className="hidden" />
-                      </label>
-                    </div>
-
-                    {/* Product Image 2 */}
-                    <div className="p-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col items-center text-center gap-3">
-                      <div className="w-full h-24 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center">
-                        {prodPreview2 ? (
-                          <img src={prodPreview2} alt="Product 2 preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <ShoppingBag className="w-6 h-6 text-slate-300" />
-                        )}
-                      </div>
-                      <label className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold cursor-pointer text-slate-700 shadow-sm transition-all">
-                        <Upload className="w-3 h-3" />
-                        Product 2
-                        <input type="file" accept="image/*" onChange={(e) => handleProdImageChange(2, e)} className="hidden" />
-                      </label>
-                    </div>
-
-                    {/* Product Image 3 */}
-                    <div className="p-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col items-center text-center gap-3">
-                      <div className="w-full h-24 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center">
-                        {prodPreview3 ? (
-                          <img src={prodPreview3} alt="Product 3 preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <ShoppingBag className="w-6 h-6 text-slate-300" />
-                        )}
-                      </div>
-                      <label className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold cursor-pointer text-slate-700 shadow-sm transition-all">
-                        <Upload className="w-3 h-3" />
-                        Product 3
-                        <input type="file" accept="image/*" onChange={(e) => handleProdImageChange(3, e)} className="hidden" />
-                      </label>
-                    </div>
-
+                    {([1, 2, 3] as const).map((idx) => {
+                      const slot = `product_image_${idx}` as MsmeImageSlot;
+                      return (
+                        <div key={slot} className="p-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col items-center text-center gap-2.5">
+                          <div className="w-full h-24 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center">
+                            <ProjectImage
+                              src={imagePreviews[slot]}
+                              alt={`Product ${idx} preview`}
+                              className="w-full h-full object-cover"
+                              fallbackClassName="px-2 gap-1"
+                            />
+                          </div>
+                          <div className="w-full flex flex-col gap-1.5">
+                            <label className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold cursor-pointer text-slate-700 shadow-sm transition-all">
+                              <Upload className="w-3 h-3" />
+                              Product {idx}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageChange(slot, "Product image", e)}
+                                className="hidden"
+                              />
+                            </label>
+                            {imagePreviews[slot] && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(slot)}
+                                className="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1 bg-white hover:bg-red-50 border border-red-200 rounded-xl text-[10px] font-bold text-red-600 shadow-xs transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Remove image
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1119,11 +1100,14 @@ export const ManageMsmes: React.FC = () => {
                 
                 {/* Logo and Name header */}
                 <div className="flex gap-4 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                  <img
-                    src={resolveLogoUrl(msmeDetails.logo_path)}
-                    alt="logo"
-                    className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm"
-                  />
+                  <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
+                    <ProjectImage
+                      src={msmeDetails.logo_path}
+                      alt={`${msmeDetails.business_name} logo`}
+                      className="w-full h-full object-cover"
+                      compact
+                    />
+                  </div>
                   <div className="space-y-1">
                     <h3 className="text-base font-black text-slate-800">{msmeDetails.business_name}</h3>
                     <div className="flex flex-wrap gap-1.5">

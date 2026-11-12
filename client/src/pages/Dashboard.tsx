@@ -23,6 +23,7 @@ import {
   Building2,
   Compass,
   Waves,
+  FileSpreadsheet,
   X
 } from "lucide-react";
 import {
@@ -38,7 +39,9 @@ import {
 import MainLayout from "../components/layout/Mainlayout";
 import Logo from "../assets/logo.jpg";
 import { PATHS } from "../routes/paths";
+import { AuthService } from "../services/Authservices";
 import { notify } from "@/util/notify";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import {
   AdminDashboardService,
   type AdminDashboardData
@@ -62,6 +65,7 @@ const CHART_COLORS = [
 ];
 
 const Dashboard: React.FC = () => {
+  const isAdmin = AuthService.isAdmin();
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -69,9 +73,11 @@ const Dashboard: React.FC = () => {
   const [isSourceDialogOpen, setIsSourceDialogOpen] = useState(false);
   const [activeSourceKey, setActiveSourceKey] = useState<string | null>(null);
 
-  const fetchDashboardData = async (isManual = false) => {
-    if (isManual) setIsRefreshing(true);
-    else setIsLoading(true);
+  const fetchDashboardData = async (isManual = false, silent = false) => {
+    if (!silent) {
+      if (isManual) setIsRefreshing(true);
+      else setIsLoading(true);
+    }
 
     try {
       const response = await AdminDashboardService.getDashboardData(isManual);
@@ -84,10 +90,14 @@ const Dashboard: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Failed to load admin dashboard data:", err);
-      notify.error("Connection Error", "Could not retrieve live dashboard statistics.");
+      if (!silent) {
+        notify.error("Connection Error", "Could not retrieve live dashboard statistics.");
+      }
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      if (!silent) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
     }
   };
 
@@ -127,6 +137,12 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  useLiveSync(
+    ["all", "opportunities", "msmes", "news", "landing", "inquiries"],
+    () => fetchDashboardData(false, true),
+    { pollIntervalMs: 20000 }
+  );
 
   const kpis = data?.kpis;
   const provSummary = data?.provincial_summary;
@@ -375,7 +391,7 @@ const Dashboard: React.FC = () => {
           </span>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className={`grid gap-5 sm:grid-cols-2 ${isAdmin ? "lg:grid-cols-3 xl:grid-cols-6" : "lg:grid-cols-3"}`}>
           {/* MSME Registry Card */}
           <Link
             to={PATHS.APP.MANAGE_MSMES}
@@ -432,94 +448,100 @@ const Dashboard: React.FC = () => {
             </div>
           </Link>
 
-          {/* Investor Inquiries Card */}
-          <Link
-            to={PATHS.APP.MANAGE_INQUIRIES}
-            className="group p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-amber-400 transition-all duration-300 flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                  <MessageSquare className="w-5 h-5" />
+          {/* Investor Inquiries Card (Admin only) */}
+          {isAdmin && (
+            <Link
+              to={PATHS.APP.MANAGE_INQUIRIES}
+              className="group p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-amber-400 transition-all duration-300 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  {kpis && kpis.pending_inquiries > 0 && (
+                    <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full border border-amber-200">
+                      {kpis.pending_inquiries} Pending
+                    </span>
+                  )}
                 </div>
-                {kpis && kpis.pending_inquiries > 0 && (
-                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full border border-amber-200">
-                    {kpis.pending_inquiries} Pending
-                  </span>
-                )}
+                <div className="mt-4">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Inquiries
+                  </p>
+                  <p className="text-2xl font-black text-slate-900 mt-1">
+                    {isLoading ? "..." : kpis?.total_inquiries ?? 0}
+                  </p>
+                </div>
               </div>
-              <div className="mt-4">
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Inquiries
-                </p>
-                <p className="text-2xl font-black text-slate-900 mt-1">
-                  {isLoading ? "..." : kpis?.total_inquiries ?? 0}
-                </p>
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500">Investor Messages</span>
+                <span className="font-semibold text-amber-600 group-hover:underline">Review &rarr;</span>
               </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Investor Messages</span>
-              <span className="font-semibold text-amber-600 group-hover:underline">Review &rarr;</span>
-            </div>
-          </Link>
+            </Link>
+          )}
 
-          {/* MSME Assistance Requests Card */}
-          <Link
-            to={PATHS.APP.MANAGE_MSMES}
-            className="group p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-purple-400 transition-all duration-300 flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                  <FileCheck2 className="w-5 h-5" />
+          {/* MSME Assistance Requests Card (Admin only) */}
+          {isAdmin && (
+            <Link
+              to={PATHS.APP.MANAGE_INQUIRIES}
+              className="group p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-purple-400 transition-all duration-300 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                    <FileCheck2 className="w-5 h-5" />
+                  </div>
+                  {kpis && kpis.pending_msme_requests > 0 && (
+                    <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded-full border border-purple-200">
+                      {kpis.pending_msme_requests} Active
+                    </span>
+                  )}
                 </div>
-                {kpis && kpis.pending_msme_requests > 0 && (
-                  <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded-full border border-purple-200">
-                    {kpis.pending_msme_requests} Active
-                  </span>
-                )}
+                <div className="mt-4">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Assistance Req.
+                  </p>
+                  <p className="text-2xl font-black text-slate-900 mt-1">
+                    {isLoading ? "..." : kpis?.total_msme_requests ?? 0}
+                  </p>
+                </div>
               </div>
-              <div className="mt-4">
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Assistance Req.
-                </p>
-                <p className="text-2xl font-black text-slate-900 mt-1">
-                  {isLoading ? "..." : kpis?.total_msme_requests ?? 0}
-                </p>
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500">Support Pipeline</span>
+                <span className="font-semibold text-purple-600 group-hover:underline">Process &rarr;</span>
               </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Support Pipeline</span>
-              <span className="font-semibold text-purple-600 group-hover:underline">Process &rarr;</span>
-            </div>
-          </Link>
+            </Link>
+          )}
 
-          {/* Registered Portal Users Card */}
-          <Link
-            to={PATHS.APP.MANAGE_USERS}
-            className="group p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-blue-400 transition-all duration-300 flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl group-hover:bg-blue-700 group-hover:text-white transition-colors">
-                  <Users className="w-5 h-5" />
+          {/* Registered Portal Users Card (Admin only) */}
+          {isAdmin && (
+            <Link
+              to={PATHS.APP.MANAGE_USERS}
+              className="group p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-blue-400 transition-all duration-300 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl group-hover:bg-blue-700 group-hover:text-white transition-colors">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-700 group-hover:translate-x-1 transition-all" />
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-700 group-hover:translate-x-1 transition-all" />
+                <div className="mt-4">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Portal Users
+                  </p>
+                  <p className="text-2xl font-black text-slate-900 mt-1">
+                    {isLoading ? "..." : kpis?.total_users ?? 0}
+                  </p>
+                </div>
               </div>
-              <div className="mt-4">
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Portal Users
-                </p>
-                <p className="text-2xl font-black text-slate-900 mt-1">
-                  {isLoading ? "..." : kpis?.total_users ?? 0}
-                </p>
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500">Registered Accounts</span>
+                <span className="font-semibold text-blue-700 group-hover:underline">Manage &rarr;</span>
               </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Registered Accounts</span>
-              <span className="font-semibold text-blue-700 group-hover:underline">Manage &rarr;</span>
-            </div>
-          </Link>
+            </Link>
+          )}
 
           {/* Economic Indicators & Data Points Card */}
           <Link
@@ -708,7 +730,8 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Actionable Live Feeds (Connected to Inquiry & MSME Request Models) */}
+      {/* 4. Actionable Live Feeds (Connected to Inquiry & MSME Request Models - Admin only) */}
+      {isAdmin && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Investor Inquiries Feed */}
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col">
@@ -864,6 +887,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* 5. Recently Registered MSMEs & Investment Opportunities */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1021,7 +1045,7 @@ const Dashboard: React.FC = () => {
           </h2>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className={`grid gap-4 sm:grid-cols-2 ${isAdmin ? "lg:grid-cols-3 xl:grid-cols-6" : "lg:grid-cols-4"}`}>
           <Link
             to={PATHS.APP.MANAGE_MSMES}
             className="p-4 bg-white rounded-2xl border border-slate-200/80 hover:border-blue-500 hover:shadow-md transition-all group flex flex-col justify-between"
@@ -1034,7 +1058,7 @@ const Dashboard: React.FC = () => {
                 MSME Management
               </h4>
               <p className="text-[11px] text-slate-500 mt-1">
-                Manage business registry profiles and assistance requests.
+                Manage business registry profiles and directory listings.
               </p>
             </div>
             <span className="text-[11px] font-bold text-blue-600 mt-4 inline-flex items-center gap-1">
@@ -1052,10 +1076,10 @@ const Dashboard: React.FC = () => {
                 <TrendingUp className="w-5 h-5" />
               </div>
               <h4 className="font-bold text-sm text-slate-900 mt-3 group-hover:text-emerald-600 transition-colors">
-                Investment &amp; Data
+                Investment Management
               </h4>
               <p className="text-[11px] text-slate-500 mt-1">
-                Curate projects, upload indicator data, and sync to investor portal.
+                Curate projects, spreadsheets, and sync to investor portal.
               </p>
             </div>
             <span className="text-[11px] font-bold text-emerald-600 mt-4 inline-flex items-center gap-1">
@@ -1065,46 +1089,71 @@ const Dashboard: React.FC = () => {
           </Link>
 
           <Link
-            to={PATHS.APP.MANAGE_INQUIRIES}
-            className="p-4 bg-white rounded-2xl border border-slate-200/80 hover:border-amber-500 hover:shadow-md transition-all group flex flex-col justify-between"
+            to={PATHS.APP.DATA_ENTRY}
+            className="p-4 bg-white rounded-2xl border border-slate-200/80 hover:border-teal-500 hover:shadow-md transition-all group flex flex-col justify-between"
           >
             <div>
-              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl w-fit group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                <MessageSquare className="w-5 h-5" />
+              <div className="p-2.5 bg-teal-50 text-teal-600 rounded-xl w-fit group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                <FileSpreadsheet className="w-5 h-5" />
               </div>
-              <h4 className="font-bold text-sm text-slate-900 mt-3 group-hover:text-amber-600 transition-colors">
-                Investor Inquiries
+              <h4 className="font-bold text-sm text-slate-900 mt-3 group-hover:text-teal-600 transition-colors">
+                Data Entry
               </h4>
               <p className="text-[11px] text-slate-500 mt-1">
-                Review letters of intent, messages, and investor applications.
+                Upload and manage municipal economic indicator data points.
               </p>
             </div>
-            <span className="text-[11px] font-bold text-amber-600 mt-4 inline-flex items-center gap-1">
+            <span className="text-[11px] font-bold text-teal-600 mt-4 inline-flex items-center gap-1">
               <span>Open Module</span>
               <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </span>
           </Link>
 
-          <Link
-            to={PATHS.APP.MANAGE_USERS}
-            className="p-4 bg-white rounded-2xl border border-slate-200/80 hover:border-blue-700 hover:shadow-md transition-all group flex flex-col justify-between"
-          >
-            <div>
-              <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl w-fit group-hover:bg-blue-700 group-hover:text-white transition-colors">
-                <Users className="w-5 h-5" />
+          {isAdmin && (
+            <Link
+              to={PATHS.APP.MANAGE_INQUIRIES}
+              className="p-4 bg-white rounded-2xl border border-slate-200/80 hover:border-amber-500 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div>
+                <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl w-fit group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <h4 className="font-bold text-sm text-slate-900 mt-3 group-hover:text-amber-600 transition-colors">
+                  Investor Inquiries
+                </h4>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Review letters of intent, messages, and investor applications.
+                </p>
               </div>
-              <h4 className="font-bold text-sm text-slate-900 mt-3 group-hover:text-blue-700 transition-colors">
-                User Management
-              </h4>
-              <p className="text-[11px] text-slate-500 mt-1">
-                Manage registered investor accounts, access rights, and logs.
-              </p>
-            </div>
-            <span className="text-[11px] font-bold text-blue-700 mt-4 inline-flex items-center gap-1">
-              <span>Open Module</span>
-              <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-            </span>
-          </Link>
+              <span className="text-[11px] font-bold text-amber-600 mt-4 inline-flex items-center gap-1">
+                <span>Open Module</span>
+                <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+          )}
+
+          {isAdmin && (
+            <Link
+              to={PATHS.APP.MANAGE_USERS}
+              className="p-4 bg-white rounded-2xl border border-slate-200/80 hover:border-blue-700 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div>
+                <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl w-fit group-hover:bg-blue-700 group-hover:text-white transition-colors">
+                  <Users className="w-5 h-5" />
+                </div>
+                <h4 className="font-bold text-sm text-slate-900 mt-3 group-hover:text-blue-700 transition-colors">
+                  User Management
+                </h4>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Manage registered investor &amp; staff accounts, access rights, and logs.
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-blue-700 mt-4 inline-flex items-center gap-1">
+                <span>Open Module</span>
+                <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+          )}
 
           <Link
             to={PATHS.APP.MANAGE_LANDING_PAGE}

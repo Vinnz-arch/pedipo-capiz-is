@@ -16,6 +16,7 @@ import {
   resolveDocUrl,
   downloadDocumentBlob
 } from "@/services/OpportunityService";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 
 interface DocumentViewerModalProps {
   document: OpportunityDocumentData | any | null;
@@ -31,6 +32,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
 
   const fileExt = (doc?.file_type || doc?.file_name.split(".").pop() || "").toLowerCase();
   const isDocx = fileExt === "docx" || fileExt === "doc";
@@ -241,12 +243,19 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
           {/* Image Viewer */}
           {isImage && !error && (
-            <div className="m-auto flex items-center justify-center p-4">
-              <img
-                src={fileUrl}
-                alt={doc.title}
-                className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-lg border border-slate-200 bg-white"
-              />
+            <div className="m-auto flex items-center justify-center p-4 w-full">
+              {!fileUrl || failedImageUrl === fileUrl ? (
+                <div className="w-full max-w-md h-64 rounded-2xl overflow-hidden border border-slate-200 shadow-xs bg-white">
+                  <ProjectImage src={null} alt={doc.title} />
+                </div>
+              ) : (
+                <img
+                  src={fileUrl}
+                  alt={doc.title}
+                  onError={() => setFailedImageUrl(fileUrl)}
+                  className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-lg border border-slate-200 bg-white"
+                />
+              )}
             </div>
           )}
 

@@ -92,7 +92,7 @@ export const Routes = createBrowserRouter([
   {
     path: PATHS.APP.MANAGE_INQUIRIES,
     element: (
-      <AuthGuard>
+      <AuthGuard allowedRoles={["admin"]}>
         {withSuspense(ManageInquiries)}
       </AuthGuard>
     ),
@@ -100,7 +100,7 @@ export const Routes = createBrowserRouter([
   {
     path: PATHS.APP.MANAGE_USERS,
     element: (
-      <AuthGuard>
+      <AuthGuard allowedRoles={["admin"]}>
         {withSuspense(ManageUsers)}
       </AuthGuard>
     ),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import ClientMainLayout from "@/components/client-portal/ClientMainLayout";
 import { 
@@ -28,6 +28,7 @@ import {
   Loader2
 } from "lucide-react";
 import { notify } from "@/util/notify";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import { InquiryService } from "@/services/InquiryService";
 import { InquiriesSection } from "./InquiriesSection";
 import { 
@@ -37,6 +38,7 @@ import {
 import { SpreadsheetGrid } from "@/components/spreadsheet/SpreadsheetGrid";
 import { DocumentViewerModal } from "@/components/documents/DocumentViewerModal";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ProjectImage } from "@/components/ui/ProjectImage";
 import { 
   OpportunityService,
   type OpportunityDocumentData,
@@ -52,10 +54,19 @@ import {
 
 export const InvestorPortal: React.FC = () => {
   const [parentOpportunities, setParentOpportunities] = useState<ParentOpportunityData[]>([]);
-  const [activeParentView, setActiveParentView] = useState<ParentOpportunityData | null>(null);
+  const [activeParentId, setActiveParentId] = useState<number | string | null>(null);
   const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const activeParentView = useMemo(
+    () => parentOpportunities.find((p) => String(p.id) === String(activeParentId)) ?? null,
+    [parentOpportunities, activeParentId]
+  );
+
+  const setActiveParentView = (parent: ParentOpportunityData | null) => {
+    setActiveParentId(parent ? parent.id : null);
+  };
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -212,29 +223,17 @@ export const InvestorPortal: React.FC = () => {
     );
   };
 
-  const resolveImageUrl = (path?: string) => {
-    if (!path) return "/images/seafood_hub.png";
-    if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("blob:")) {
-      return path;
+  const loadPublishedOpportunities = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoading(true);
     }
-    return `http://localhost:8000${path.startsWith("/") ? "" : "/"}${path}`;
-  };
-
-  const loadPublishedOpportunities = async () => {
-    setIsLoading(true);
     try {
       const res = await OpportunityService.getPublicParents();
       if (res.parent_opportunities) {
         setParentOpportunities(res.parent_opportunities);
         const allChildren = res.parent_opportunities.flatMap((p) => p.projects || []);
         setOpportunities(allChildren);
-
-        if (activeParentView) {
-          const updated = res.parent_opportunities.find(
-            (p) => String(p.id) === String(activeParentView.id)
-          );
-          if (updated) setActiveParentView(updated);
-        }
       }
       if (res.categories) {
         setCategories(res.categories);
@@ -242,37 +241,26 @@ export const InvestorPortal: React.FC = () => {
     } catch (error) {
       console.error("Failed to load investor portal opportunities:", error);
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     loadPublishedOpportunities();
-
-    // Listen for real-time Sync Portal broadcasts from Admin Portal
-    let channel: BroadcastChannel | null = null;
-    try {
-      channel = new BroadcastChannel("pedipo_portal_sync");
-      channel.onmessage = (event) => {
-        if (event.data?.type === "SYNC_PORTAL") {
-          loadPublishedOpportunities();
-          notify.info("Portal Refreshed", "Latest investment opportunities synchronized from Admin.");
-        }
-      };
-    } catch (err) {
-      console.warn("BroadcastChannel error:", err);
-    }
-
-    const handleFocus = () => {
-      loadPublishedOpportunities();
-    };
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      if (channel) channel.close();
-      window.removeEventListener("focus", handleFocus);
-    };
   }, []);
+
+  useLiveSync(
+    ["opportunities", "all"],
+    (meta) => {
+      loadPublishedOpportunities({ silent: true });
+      if (meta?.isManualPortalSync) {
+        notify.info("Portal Refreshed", "Latest investment opportunities synchronized from Admin.");
+      }
+    },
+    { pollIntervalMs: 10000 }
+  );
 
   const openInquiryModal = (opp: OpportunityData) => {
     setInquiryModalProject(opp);
@@ -500,7 +488,7 @@ export const InvestorPortal: React.FC = () => {
               />
             </div>
             <button
-              onClick={loadPublishedOpportunities}
+              onClick={() => loadPublishedOpportunities()}
               disabled={isLoading}
               title="Refresh Portal Listings"
               className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all cursor-pointer shrink-0 border border-slate-200"
@@ -597,10 +585,11 @@ export const InvestorPortal: React.FC = () => {
                         onClick={() => setViewingDetailsOpp(opp)}
                         className="w-full h-48 relative overflow-hidden bg-slate-100 cursor-pointer"
                       >
-                        <img
-                          src={resolveImageUrl(opp.image_path)}
+                        <ProjectImage
+                          src={opp.image_path}
                           alt={opp.project_name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fallbackClassName="pt-4"
                         />
                         <div className="absolute top-3 left-3 bg-[#002B66]/90 backdrop-blur-md text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow-md">
                           {opp.municipality?.name || opp.location || "Capiz"}
@@ -1326,10 +1315,11 @@ export const InvestorPortal: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* Hero Image */}
                 <div className="w-full h-56 rounded-2xl overflow-hidden border border-slate-200 relative bg-slate-100 shadow-inner">
-                  <img
-                    src={resolveImageUrl(viewingDetailsOpp.image_path)}
+                  <ProjectImage
+                    src={viewingDetailsOpp.image_path}
                     alt={viewingDetailsOpp.project_name}
                     className="w-full h-full object-cover"
+                    fallbackClassName="pb-12"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-4">
                     <div className="text-white">

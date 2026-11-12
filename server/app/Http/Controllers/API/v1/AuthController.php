@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\API\v1;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\User;
+use App\Models\UserLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -69,25 +72,57 @@ class AuthController extends Controller
             }
         }
 
-        // 3. Find the admin by email
+        // 3. Authenticate either an Admin or a PEDIPO Staff account
         $admin = Admin::where('email', $request->email)->first();
 
-        // 3. Securely check the password
-        // We use Hash::check to compare the plain text password with the hashed one in the DB
-        if (! $admin || ! Hash::check($request->password, $admin->password)) {
+        if ($admin) {
+            if (! Hash::check($request->password, $admin->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['The provided credentials are incorrect.'],
+                ]);
+            }
+
+            $token = $admin->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => array_merge($admin->toArray(), [
+                    'role' => UserRole::ADMIN->value,
+                ]),
+            ]);
+        }
+
+        $staff = User::where('email', $request->email)
+            ->where('role', UserRole::STAFF->value)
+            ->first();
+
+        if (! $staff || ! Hash::check($request->password, $staff->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        // 4. Generate a secure token for this admin
-        $token = $admin->createToken('auth_token')->plainTextToken;
+        $token = $staff->createToken('staff_auth_token')->plainTextToken;
 
-        // 5. Return the token and user info (return admin under 'user' key for frontend compatibility)
+        UserLog::create([
+            'user_id' => $staff->id,
+            'action' => 'login',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $admin
+            'user' => [
+                'id' => $staff->id,
+                'name' => $staff->fullname,
+                'fullname' => $staff->fullname,
+                'username' => $staff->username,
+                'email' => $staff->email,
+                'role' => UserRole::STAFF->value,
+            ],
         ]);
     }
 
@@ -96,8 +131,19 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $authenticated = $request->user();
+
+        if ($authenticated instanceof User) {
+            UserLog::create([
+                'user_id' => $authenticated->id,
+                'action' => 'logout',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        }
+
         // Revoke the token that was used to authenticate the current request
-        $request->user()->currentAccessToken()->delete();
+        $authenticated?->currentAccessToken()?->delete();
 
         return response()->json([
             'message' => 'Successfully logged out'

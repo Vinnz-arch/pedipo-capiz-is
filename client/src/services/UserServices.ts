@@ -44,8 +44,16 @@ export const UserServices = {
   /**
    * Fetch all users (paginated).
    */
-  getAll: async (page: number = 1, perPage: number = 10, search: string = "") => {
-    return await ApiHandler.get<PaginatedResponse<User>>(`/v1/users?page=${page}&per_page=${perPage}&search=${search}`);
+  getAll: async (page: number = 1, perPage: number = 10, search: string = "", role: string = "all") => {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+      search,
+    });
+    if (role && role !== "all") {
+      params.set("role", role);
+    }
+    return await ApiHandler.get<PaginatedResponse<User>>(`/v1/users?${params.toString()}`);
   },
 
   /**

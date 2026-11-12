@@ -22,6 +22,7 @@ const ManageUsers = () => {
   const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "user" | "staff">("all");
   
   // Password Visibility States
   const [showPassword, setShowPassword] = useState(false);
@@ -59,25 +60,30 @@ const ManageUsers = () => {
     if (node) observer.current.observe(node);
   }, [isLoading, hasMore]);
 
-  // Initial load and Search reset
+  // Initial load and Search/Filter reset
   useEffect(() => {
     setPage(1);
     setUsers([]);
     setHasMore(true);
-    fetchUsers(1, true, searchQuery);
-  }, [searchQuery]);
+    fetchUsers(1, true, searchQuery, roleFilter);
+  }, [searchQuery, roleFilter]);
 
   // Load more pages
   useEffect(() => {
     if (page > 1) {
-      fetchUsers(page, false, searchQuery);
+      fetchUsers(page, false, searchQuery, roleFilter);
     }
   }, [page]);
 
-  const fetchUsers = async (pageNum: number, isInitial: boolean = false, search: string = "") => {
+  const fetchUsers = async (
+    pageNum: number,
+    isInitial: boolean = false,
+    search: string = "",
+    role: string = roleFilter
+  ) => {
     setIsLoading(true);
     try {
-      const response = await UserServices.getAll(pageNum, 15, search);
+      const response = await UserServices.getAll(pageNum, 15, search, role);
       
       setUsers(prev => {
         const newData = isInitial ? response.data : [...prev, ...response.data];
@@ -214,7 +220,7 @@ const ManageUsers = () => {
       // Refresh first page
       setPage(1);
       setUsers([]);
-      fetchUsers(1, true);
+      fetchUsers(1, true, searchQuery, roleFilter);
       closeModal();
     } catch (error) {
       console.error("Submission failed", error);
@@ -250,8 +256,8 @@ const ManageUsers = () => {
 
         {/* Filters and Search */}
         <Card>
-          <CardContent className="p-4">
-            <div className="relative">
+          <CardContent className="p-4 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
               <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
@@ -260,6 +266,18 @@ const ManageUsers = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+            </div>
+            <div className="sm:w-52">
+              <select
+                aria-label="Filter by role"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value as "all" | "user" | "staff")}
+                className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              >
+                <option value="all">All Roles</option>
+                <option value="staff">PEDIPO Staff</option>
+                <option value="user">Portal Users</option>
+              </select>
             </div>
           </CardContent>
         </Card>
@@ -305,8 +323,14 @@ const ManageUsers = () => {
                           <td className="p-4 text-muted-foreground">@{user.username}</td>
                           <td className="p-4 text-muted-foreground">{user.email}</td>
                           <td className="p-4">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
-                              {user.role}
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                user.role === "staff"
+                                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                  : "bg-primary/10 text-primary"
+                              }`}
+                            >
+                              {user.role === "staff" ? "PEDIPO Staff" : "Portal User"}
                             </span>
                           </td>
                           <td className="p-4 text-right">
@@ -413,16 +437,27 @@ const ManageUsers = () => {
                         placeholder="email@example.com"
                         />
                     </div>
-                    {modalMode === "view" && (
-                         <div className="space-y-2">
-                         <label className="text-sm font-medium flex items-center gap-2">
-                          <Icons.ShieldCheck className="h-4 w-4 text-muted-foreground" /> Role
-                         </label>
-                         <div className="px-3 py-2 rounded-md bg-muted border border-input capitalize">
-                            {formData.role}
-                         </div>
-                     </div>
-                    )}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-2">
+                          <Icons.ShieldCheck className="h-4 w-4 text-muted-foreground" /> Account Role
+                        </label>
+                        {modalMode === "view" ? (
+                          <div className="px-3 py-2 rounded-md bg-muted border border-input">
+                            {formData.role === "staff" ? "PEDIPO Staff" : "Portal User (Investor / MSME)"}
+                          </div>
+                        ) : (
+                          <select
+                            name="role"
+                            value={formData.role}
+                            onChange={handleInputChange}
+                            disabled={isSubmitting}
+                            className="w-full px-3 py-2 rounded-md border border-input bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                          >
+                            <option value="user">Portal User (Investor / MSME)</option>
+                            <option value="staff">PEDIPO Staff (CMS, MSMEs, Data Entry, Investments)</option>
+                          </select>
+                        )}
+                    </div>
                   </div>
 
                   {modalMode === "edit" && (

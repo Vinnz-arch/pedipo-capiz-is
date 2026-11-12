@@ -35,7 +35,7 @@ export interface OpportunityData {
   key_incentives?: string;
   description?: string;
   incentive_package?: string;
-  image_path?: string;
+  image_path?: string | null;
   status: "Draft" | "Published" | "Closed";
   location?: string;
   source_name?: string;
@@ -88,7 +88,7 @@ export interface ParentOpportunityData {
   data_year?: string;
   spreadsheet_data?: any;
   status: "Draft" | "Published" | "Closed";
-  image_path?: string;
+  image_path?: string | null;
   projects_count: number;
   municipalities_summary: string[];
   total_land_area: number;
