@@ -11,21 +11,37 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Drop foreign key constraints on dependent tables
-        Schema::table('opportunities', function (Blueprint $table) {
-            $table->dropForeign(['municipality_id']);
-        });
+        Schema::disableForeignKeyConstraints();
 
-        Schema::table('msmes', function (Blueprint $table) {
-            $table->dropForeign(['municipality_id']);
-        });
+        // 1. Drop foreign key constraints on dependent tables safely
+        if (Schema::hasTable('opportunities')) {
+            try {
+                Schema::table('opportunities', function (Blueprint $table) {
+                    $table->dropForeign(['municipality_id']);
+                });
+            } catch (\Throwable $e) {}
+        }
 
-        Schema::table('indicator_values', function (Blueprint $table) {
-            $table->dropForeign(['municipality_id']);
-        });
+        if (Schema::hasTable('msmes')) {
+            try {
+                Schema::table('msmes', function (Blueprint $table) {
+                    $table->dropForeign(['municipality_id']);
+                });
+            } catch (\Throwable $e) {}
+        }
+
+        if (Schema::hasTable('indicator_values')) {
+            try {
+                Schema::table('indicator_values', function (Blueprint $table) {
+                    $table->dropForeign(['municipality_id']);
+                });
+            } catch (\Throwable $e) {}
+        }
 
         // 2. Drop the municipalities table
         Schema::dropIfExists('municipalities');
+
+        Schema::enableForeignKeyConstraints();
     }
 
     /**
@@ -33,36 +49,54 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Recreate municipalities table
-        Schema::create('municipalities', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique();
-            $table->string('slug')->unique();
-            $table->string('class');
-            $table->integer('population')->default(0);
-            $table->decimal('land_area', 8, 2)->default(0.00);
-            $table->integer('barangay_count')->default(0);
-            $table->decimal('gdp', 12, 2)->nullable();
-            $table->text('key_industries')->nullable();
-            $table->text('description')->nullable();
-            $table->string('seal_path')->nullable();
-            $table->string('contact_email')->nullable();
-            $table->string('contact_phone')->nullable();
-            $table->string('website_url')->nullable();
-            $table->timestamps();
-        });
+        Schema::disableForeignKeyConstraints();
 
-        // Restore foreign key constraints
-        Schema::table('opportunities', function (Blueprint $table) {
-            $table->foreign('municipality_id')->references('id')->on('municipalities')->onDelete('cascade');
-        });
+        // Recreate municipalities table if it does not exist
+        if (!Schema::hasTable('municipalities')) {
+            Schema::create('municipalities', function (Blueprint $table) {
+                $table->id();
+                $table->string('name')->unique();
+                $table->string('slug')->unique();
+                $table->string('class');
+                $table->integer('population')->default(0);
+                $table->decimal('land_area', 8, 2)->default(0.00);
+                $table->integer('barangay_count')->default(0);
+                $table->decimal('gdp', 12, 2)->nullable();
+                $table->text('key_industries')->nullable();
+                $table->text('description')->nullable();
+                $table->string('seal_path')->nullable();
+                $table->string('contact_email')->nullable();
+                $table->string('contact_phone')->nullable();
+                $table->string('website_url')->nullable();
+                $table->timestamps();
+            });
+        }
 
-        Schema::table('msmes', function (Blueprint $table) {
-            $table->foreign('municipality_id')->references('id')->on('municipalities')->onDelete('set null');
-        });
+        // Restore foreign key constraints safely
+        if (Schema::hasTable('opportunities')) {
+            try {
+                Schema::table('opportunities', function (Blueprint $table) {
+                    $table->foreign('municipality_id')->references('id')->on('municipalities')->onDelete('cascade');
+                });
+            } catch (\Throwable $e) {}
+        }
 
-        Schema::table('indicator_values', function (Blueprint $table) {
-            $table->foreign('municipality_id')->references('id')->on('municipalities')->onDelete('cascade');
-        });
+        if (Schema::hasTable('msmes')) {
+            try {
+                Schema::table('msmes', function (Blueprint $table) {
+                    $table->foreign('municipality_id')->references('id')->on('municipalities')->onDelete('set null');
+                });
+            } catch (\Throwable $e) {}
+        }
+
+        if (Schema::hasTable('indicator_values')) {
+            try {
+                Schema::table('indicator_values', function (Blueprint $table) {
+                    $table->foreign('municipality_id')->references('id')->on('municipalities')->onDelete('cascade');
+                });
+            } catch (\Throwable $e) {}
+        }
+
+        Schema::enableForeignKeyConstraints();
     }
 };

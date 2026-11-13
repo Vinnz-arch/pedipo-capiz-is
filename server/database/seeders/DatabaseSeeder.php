@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             IndicatorSeeder::class,
             IndicatorValueSeeder::class,
             OpportunitySeeder::class,
+            ParentOpportunitySeeder::class,
             InquirySeeder::class,
             LandingPageSettingSeeder::class,
             NewsArticleSeeder::class,

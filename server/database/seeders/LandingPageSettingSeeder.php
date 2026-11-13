@@ -39,11 +39,11 @@ class LandingPageSettingSeeder extends Seeder
                 'service_pledge_3' => 'Promoting the growth of the local community and business sector.',
                 'service_pledge_4' => 'Serving senior citizens and differently-abled individuals with care and inclusion.',
                 
-                // Contact Details
-                'contact_address' => '2nd Floor, Room 22, Capiz Government and Business Center, Roxas City',
-                'contact_email' => 'capiz.pedipo@gmail.com',
-                'contact_phone' => '(036) 620-755',
-                'contact_facebook' => 'https://facebook.com/capiz.pedipo',
+                // Contact Details (from official PEDIPO brochure)
+                'contact_address' => '2nd Floor, Room 23, Capiz Government and Business Center, Brgy. Tiza, Roxas City, Capiz',
+                'contact_email' => 'capiz.ledipo23@gmail.com',
+                'contact_phone' => '(036) 6200-759',
+                'contact_facebook' => 'https://facebook.com/pedipo.capiz',
                 'contact_twitter' => 'https://twitter.com/capiz.pedipo',
                 'contact_linkedin' => 'https://linkedin.com/company/capiz-pedipo',
                 
@@ -52,10 +52,10 @@ class LandingPageSettingSeeder extends Seeder
                 'division_1_subtitle' => 'SUPPORTING LOCAL GROWTH & ENTERPRISE',
                 'division_1_bullets' => "Trade Promotions: Oversee trade & industry exhibitions.\nSME Coordination: Project initiatives with LGUs, councils & agencies.\nProduct Promotion: Highlight local products, visitor's marketplace.\nResearch & Innovation: Study standards and industry trends.\nProduct Matching: Connect MSMEs to market opportunities.",
                 
-                // Division 2
+                // Division 2 (from official PEDIPO brochure)
                 'division_2_title' => 'INVESTMENT SERVICES',
-                'division_2_subtitle' => 'FACILITATING GLOBAL CAPITAL',
-                'division_2_bullets' => "Registration Support: Assisting database creation & assistance.\nPartnerships: Connect with local businesses to secure providers.\nLocal Expertise: Guidance through various provincial offices.\nPriority Financing: Align with city's critical projects.\nDedicated Assistance: Responsive team for all concerns.",
+                'division_2_subtitle' => 'FACILITATING GLOBAL CAPITAL & LOCAL INCENTIVES',
+                'division_2_bullets' => "Evaluation of Local Tax Incentives: Assess & process tax incentive applications under the Capiz Province Investment and Incentives Code.\nFacilitation of Investor Concerns: Address inquiries, resolve bottlenecks, and coordinate with relevant government offices.\nInvestment Collaterals & Briefings: Develop promotion profiles, presentations, and conduct investment briefings.\nLocational Assistance: Help investors identify suitable business locations, sites, infrastructure, and utilities.\nInvestor-Friendly Environment: Foster a conducive climate by strengthening partnerships and public-private networking.",
                 
                 // Division 3
                 'division_3_title' => 'ECONOMIC ENTERPRISE',

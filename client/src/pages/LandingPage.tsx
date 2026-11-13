@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   MapPin, 
@@ -6,11 +6,15 @@ import {
   Phone, 
   ArrowUpRight, 
   ChevronRight, 
+  ChevronLeft,
   Check, 
   Target, 
   Award,
   Menu,
-  X
+  X,
+  Calendar,
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 import { LandingPageService, type LandingPageSettingData } from "@/services/LandingPageService";
 import { OpportunityService, type OpportunityData } from "@/services/OpportunityService";
@@ -26,6 +30,9 @@ export const LandingPage: React.FC = () => {
   const [settings, setSettings] = useState<LandingPageSettingData | null>(null);
   const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
   const [news, setNews] = useState<NewsArticleData[]>([]);
+  const [activeNewsIndex, setActiveNewsIndex] = useState(0);
+  const [isNewsHovered, setIsNewsHovered] = useState(false);
+  const thumbnailTrackRef = useRef<HTMLDivElement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [failedHeroSrc, setFailedHeroSrc] = useState<string | null>(null);
@@ -46,7 +53,7 @@ export const LandingPage: React.FC = () => {
 
       const newsRes = await NewsService.getAll();
       if (newsRes.articles) {
-        setNews(newsRes.articles.slice(0, 3));
+        setNews(newsRes.articles.slice(0, 10));
       }
     } catch (error) {
       console.error("Failed to load landing page data:", error);
@@ -74,6 +81,34 @@ export const LandingPage: React.FC = () => {
     () => fetchLandingData({ silent: true }),
     { pollIntervalMs: 10000 }
   );
+
+  const handlePrevNews = () => {
+    if (news.length <= 1) return;
+    setActiveNewsIndex((prev) => (prev - 1 + news.length) % news.length);
+  };
+
+  const handleNextNews = () => {
+    if (news.length <= 1) return;
+    setActiveNewsIndex((prev) => (prev + 1) % news.length);
+  };
+
+  useEffect(() => {
+    if (news.length <= 1 || isNewsHovered) return;
+    const timer = setInterval(() => {
+      setActiveNewsIndex((prev) => (prev + 1) % news.length);
+    }, 6500);
+    return () => clearInterval(timer);
+  }, [news.length, isNewsHovered]);
+
+  useEffect(() => {
+    if (!thumbnailTrackRef.current) return;
+    const target = thumbnailTrackRef.current.children[activeNewsIndex] as HTMLElement | undefined;
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
+    }
+  }, [activeNewsIndex]);
+
+  const activeNewsItem = news[activeNewsIndex < news.length ? activeNewsIndex : 0];
 
   const handleExploreOpps = () => {
     const el = document.getElementById("opportunities");
@@ -500,72 +535,184 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* News & Updates Section */}
-      <section id="news" className="py-24 bg-white border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 text-left border-b border-slate-100 pb-6">
-            <div className="space-y-2">
-              <span className="text-[10px] font-extrabold text-[#A28815] tracking-widest uppercase block">
-                NEWS & ANNOUNCEMENTS
+      <section id="news" className="w-full bg-slate-950 border-t border-slate-800 text-white relative">
+        {/* Section Header */}
+        <div className="w-full max-w-[1800px] mx-auto px-6 sm:px-10 lg:px-12 pt-12 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 text-left border-b border-slate-800/80 pb-6">
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-extrabold text-[#E2B714] tracking-widest uppercase flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#E2B714]" />
+                NEWS & ACTIVITIES
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight uppercase">
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight uppercase">
                 Latest News & Updates
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                Keep up with important events, business milestones, and news from our economic development team.
+              <p className="text-xs sm:text-sm text-slate-400 font-medium max-w-2xl">
+                Keep up with important events, business milestones, and key developments from our economic development team.
               </p>
             </div>
             <button 
               onClick={() => navigate("/news")}
-              className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-[#002B66] text-slate-700 hover:text-white text-xs font-bold rounded-xl transition-all duration-300 tracking-wider uppercase cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 bg-white/10 hover:bg-[#002B66] active:bg-[#001D47] text-white text-xs font-bold rounded-xl transition-all duration-300 tracking-wider uppercase border border-white/15 hover:border-blue-500/50 cursor-pointer flex items-center justify-center gap-2 shrink-0 backdrop-blur-xs"
             >
-              Browse All News
+              <span>Browse All News</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
+        </div>
 
-          {news.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-slate-50 border border-slate-200/50 rounded-2xl">
+        {/* Full-Width Showcase Banner (Edge-to-Edge) */}
+        {news.length === 0 ? (
+          <div className="w-full max-w-[1800px] mx-auto px-6 sm:px-10 lg:px-12 pb-16">
+            <div className="text-center py-16 text-slate-400 bg-slate-900/60 border border-slate-800 rounded-3xl">
               No news articles published yet.
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {news.map((item) => (
-                <div 
-                  key={item.id} 
-                  className="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-pointer text-left"
-                  onClick={() => navigate(`/news/${item.slug}`)}
-                >
-                  <div>
-                    <div className="relative h-48 bg-slate-100 overflow-hidden">
-                      <ProjectImage
-                        src={item.image_path}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-                    <div className="p-6 space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        <span>{item.published_at ? new Date(item.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
-                        <span>•</span>
-                        <span>{item.author || "PEDIPO"}</span>
-                      </div>
-                      <h4 className="text-sm font-extrabold text-slate-950 leading-snug group-hover:text-[#002B66] transition-colors line-clamp-2">
-                        {item.title}
-                      </h4>
-                      <p className="text-xs text-slate-500 leading-relaxed font-medium line-clamp-3">
-                        {item.summary}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="px-6 pb-6 pt-2">
-                    <span className="text-[11px] font-bold text-[#002B66] group-hover:underline flex items-center gap-1">
-                      Read Full Story <ChevronRight className="w-3.5 h-3.5" />
-                    </span>
+          </div>
+        ) : (
+          <div 
+            className="relative w-full overflow-hidden bg-slate-950 min-h-[580px] lg:h-[640px] flex flex-col justify-between group border-b border-slate-800/60"
+            onMouseEnter={() => setIsNewsHovered(true)}
+            onMouseLeave={() => setIsNewsHovered(false)}
+          >
+            {/* Dynamic Active Slide Background Image (100% Full-Width Edge-to-Edge) */}
+            <div className="absolute inset-0 z-0 w-full h-full">
+              {activeNewsItem && (
+                <ProjectImage
+                  key={activeNewsItem.id}
+                  src={activeNewsItem.image_path}
+                  alt={activeNewsItem.title}
+                  className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover:scale-102"
+                />
+              )}
+              {/* Multi-layered cinematic gradient overlays for contrast and readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-slate-950/60 lg:bg-gradient-to-r lg:from-slate-950 lg:via-slate-950/90 lg:to-slate-950/45" />
+              <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]" />
+            </div>
+
+            {/* Main Interactive Showcase Layout */}
+            <div className="relative z-10 w-full max-w-[1800px] mx-auto px-6 sm:px-10 lg:px-12 h-full py-8 sm:py-10 lg:py-12 flex flex-col justify-between space-y-6 flex-1">
+              {/* Top Action Row: Date Badge + SEE MORE / VISIT POST buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#E2B714]/20 text-[#E2B714] border border-[#E2B714]/30 backdrop-blur-md shadow-xs">
+                    <Calendar className="w-3 h-3 text-[#E2B714]" />
+                    {activeNewsItem?.published_at
+                      ? new Date(activeNewsItem.published_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+                      : "LATEST STORY"}
+                  </span>
+                  <span className="text-xs text-slate-400 font-bold hidden sm:inline-block">
+                    • {activeNewsItem?.author || "PEDIPO"}
+                  </span>
+                </div>
+
+                {/* Top-Right Action Buttons */}
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <button
+                    onClick={() => navigate("/news")}
+                    className="px-4 sm:px-5 py-2 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/25 rounded-xl text-xs font-black tracking-widest uppercase transition-all backdrop-blur-md shadow-xs cursor-pointer"
+                  >
+                    SEE MORE
+                  </button>
+                  {activeNewsItem && (
+                    <button
+                      onClick={() => navigate(`/news/${activeNewsItem.slug}`)}
+                      className="px-4 sm:px-5 py-2 bg-[#002B66] hover:bg-[#003882] active:bg-[#001D47] text-white border border-blue-400/40 rounded-xl text-xs font-black tracking-widest uppercase transition-all shadow-md shadow-blue-950/50 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>VISIT POST</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Middle Row: Featured Title, Excerpt & Navigation Controls */}
+              <div className="max-w-2xl text-left space-y-4 my-auto py-2">
+                {activeNewsItem && (
+                  <>
+                    <h4 
+                      onClick={() => navigate(`/news/${activeNewsItem.slug}`)}
+                      className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight tracking-tight drop-shadow-md hover:text-amber-300 transition-colors cursor-pointer line-clamp-3"
+                    >
+                      {activeNewsItem.title}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed font-medium line-clamp-3 max-w-xl drop-shadow-xs">
+                      {activeNewsItem.summary}
+                    </p>
+                  </>
+                )}
+
+                {/* Navigation Arrows & Counter */}
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={handlePrevNews}
+                    disabled={news.length <= 1}
+                    title="Previous Article"
+                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 active:bg-white/35 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleNextNews}
+                    disabled={news.length <= 1}
+                    title="Next Article"
+                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 active:bg-white/35 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <span className="text-xs font-mono font-bold text-slate-300 ml-2 tracking-widest">
+                    {String(activeNewsIndex + 1).padStart(2, "0")} / {String(news.length).padStart(2, "0")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom Row: Floating Interactive Thumbnail Carousel Strip */}
+              <div className="pt-4 border-t border-white/10 lg:border-t-0 flex flex-col lg:flex-row lg:items-end lg:justify-end gap-3">
+                <div className="w-full lg:max-w-3xl 2xl:max-w-4xl">
+                  <div 
+                    ref={thumbnailTrackRef}
+                    className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 scrollbar-none snap-x"
+                  >
+                    {news.map((item, idx) => {
+                      const isActive = idx === activeNewsIndex;
+                      const monthLabel = item.published_at 
+                        ? new Date(item.published_at).toLocaleDateString("en-US", { month: "short" }).toUpperCase()
+                        : "ACTIVITY";
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setActiveNewsIndex(idx)}
+                          className={`w-32 sm:w-36 h-40 sm:h-44 rounded-2xl overflow-hidden shrink-0 relative cursor-pointer transition-all duration-300 snap-start border ${
+                            isActive
+                              ? "ring-2 ring-[#E2B714] border-transparent scale-105 shadow-2xl shadow-amber-500/30 opacity-100 z-10"
+                              : "border-white/20 opacity-70 hover:opacity-100 hover:scale-102 hover:border-white/50"
+                          }`}
+                        >
+                          <ProjectImage
+                            src={item.image_path}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Card gradient scrim */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
+                          {/* Card label badge */}
+                          <div className="absolute bottom-2.5 left-2.5 right-2.5 text-left space-y-1">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#E2B714] block drop-shadow-xs">
+                              {monthLabel}
+                            </span>
+                            <p className="text-[11px] font-bold text-white leading-tight line-clamp-2 drop-shadow-xs">
+                              {item.title}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </section>
 
       {/* 7. Mandate, Service Pledge Section */}
